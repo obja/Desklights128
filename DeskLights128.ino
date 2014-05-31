@@ -197,7 +197,12 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
 int g2p(int x, int y) {
-  return grid[x + (y * (max_x + 1))];
+  if(x%2) { // if odd
+    return (max_y * x) + y-1-max_y;
+  }
+  else { //else true, so
+  return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
+  }
 }
 
 // flash color "c" for "wait" ms
