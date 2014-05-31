@@ -68,14 +68,14 @@ int max_y = 8;
 // 'graph' style x,y where 0,0 is bottom left
 
 int grid[STRIPLEN] = {
-127,112,111,96,95,80,79,64,63,48,47,32,31,16,15,0,
-126,113,110,97,94,81,78,65,62,49,46,33,30,17,14,1,
-125,114,109,98,93,82,77,66,61,50,45,34,29,18,13,2,
-124,115,108,99,92,83,76,67,60,51,44,35,28,19,12,3,
-123,116,107,100,91,84,75,68,59,52,43,36,27,20,11,4,
-122,117,106,101,90,85,74,69,58,53,42,37,26,21,10,5,
-121,118,105,102,89,86,73,70,57,54,41,38,25,22,9,6,
-120,119,104,103,88,87,72,71,56,55,40,39,24,23,8,7
+7,8,23,24,39,40,55,56,71,72,87,88,103,104,119,120,
+6,9,22,25,38,41,54,57,70,73,86,89,102,105,118,121,
+5,10,21,26,37,42,53,58,69,74,85,90,101,106,117,122,
+4,11,20,27,36,43,52,59,68,75,84,91,100,107,116,123,
+3,12,19,28,35,44,51,60,67,76,83,92,99,108,115,124,
+2,13,18,29,34,45,50,61,66,77,82,93,98,109,114,125,
+1,14,17,30,33,46,49,62,65,78,81,94,97,110,113,126,
+0,15,16,31,32,47,48,63,64,79,80,95,96,111,112,127
 };
 
 // 'screen' style x,y where 0,0 is top left
@@ -108,9 +108,10 @@ P(ok) = "<a href='http://192.168.0.220/alert?h=ffffff&d=1000'>Alert (FFFFFF) 100
 <a href='http://192.168.0.220/alert?h=336600&d=1000'>Alert Green (336600) 1000ms</a><p> \
 <a href='http://192.168.0.220/alert?h=003333&d=1000'>Alert Blue (003333) 1000ms</a><p> \
 <a href='http://192.168.0.220/alert?h=660033&d=1000'>Alert Purple (660033) 1000ms</a><p> \
-<a href='http://192.168.0.220/default?id=1'> Default 1 1000ms</a><p> \
-<a href='http://192.168.0.220/default?id=2'> Default 2 1000ms</a><p> \
-<a href='http:///default?id=3'> Default 3 1000ms</a><p>";
+<a href='http://192.168.0.220/default?id=1'>Default 1</a><p> \
+<a href='http://192.168.0.220/default?id=2'>Default 2</a><p> \
+<a href='http://192.168.0.220/default?id=2'>Default 3</a><p> \
+<a href='http://192.168.0.220/off'>All Off</a><p>";
 P(noauth) = "User Denied\n";
 
 // max length of param names and values
@@ -196,7 +197,12 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
 int g2p(int x, int y) {
-  return grid[x + (y * (max_x + 1))];
+  if(x%2) { // if odd
+    return (max_y * x) + y-1-max_y;
+  }
+  else { //else true, so
+  return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
+  }
 }
 
 // flash color "c" for "wait" ms
