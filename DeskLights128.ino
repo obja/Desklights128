@@ -108,9 +108,9 @@ P(ok) = "<a href='http://192.168.0.220/alert?h=ffffff&d=1000'>Alert (FFFFFF) 100
 <a href='http://192.168.0.220/alert?h=336600&d=1000'>Alert Green (336600) 1000ms</a><p> \
 <a href='http://192.168.0.220/alert?h=003333&d=1000'>Alert Blue (003333) 1000ms</a><p> \
 <a href='http://192.168.0.220/alert?h=660033&d=1000'>Alert Purple (660033) 1000ms</a><p> \
-<a href='http://192.168.0.220/default?id=1'> Default 1 1000ms</a><p> \
-<a href='http://192.168.0.220/default?id=2'> Default 2 1000ms</a><p> \
-<a href='http:///default?id=3'> Default 3 1000ms</a><p>";
+<a href='http://192.168.0.220/default?id=1'>Default 1</a><p> \
+<a href='http://192.168.0.220/default?id=2'>Default 2</a><p> \
+<a href='http://192.168.0.220/default?id=2'>Default 3</a><p>";
 P(noauth) = "User Denied\n";
 
 // max length of param names and values
