@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
 	}
 	public void webSend(View v) {
 		String color = spinner.getItemAtPosition(spinner.getSelectedItemPosition()).toString();
-		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "?x=" + x.getText() + "y=" + y.getText() + "&" + map.get(color);
+		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "pixel?x=" + x.getText() + "y=" + y.getText() + "&" + map.get(color);
 		final ThreadedRequest tReq = new ThreadedRequest(url);
 		tReq.start(new Runnable() 
 		    {
