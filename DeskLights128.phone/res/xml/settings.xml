@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+ 
+    <PreferenceCategory android:title="Settings" >
+        <EditTextPreference
+                android:title="IP Address"
+                android:summary="Set the IP address of the DeskLights table"
+                android:key="prefIP"/>
+    </PreferenceCategory>
+     
+</PreferenceScreen>
