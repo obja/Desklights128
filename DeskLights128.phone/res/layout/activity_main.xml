@@ -14,10 +14,10 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="20dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"
         android:text="Grid (X, Y)"
-        android:textAppearance="?android:attr/textAppearanceMedium"  />
+        android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <EditText
         android:id="@+id/editText1"
@@ -41,10 +41,7 @@
         android:layout_toRightOf="@+id/editText1"
         android:ems="10"
         android:inputType="number"
-        android:width="40dp" >
-
-        <requestFocus />
-    </EditText>
+        android:width="40dp" />
 
     <TextView
         android:id="@+id/textView2"
@@ -64,17 +61,6 @@
         android:layout_alignTop="@+id/textView2"
         android:layout_toRightOf="@+id/textView1" />
 
-    <Button
-        android:id="@+id/button1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_marginBottom="15dp"
-        android:layout_marginRight="15dp"
-        android:onClick="webSend"
-        android:text="Submit" />
-
     <TextView
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
@@ -84,5 +70,44 @@
         android:layout_marginBottom="10dp"
         android:layout_marginLeft="10dp"
         android:text="TextView" />
+
+    <Button
+        android:id="@+id/button1"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/spinner1"
+        android:layout_toRightOf="@+id/spinner1"
+        android:onClick="webSend"
+        android:text="Send" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textView2"
+        android:layout_below="@+id/spinner1"
+        android:layout_marginTop="25dp"
+        android:layout_toLeftOf="@+id/spinner1"
+        android:text="Table to Color:"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <Spinner
+        android:id="@+id/spinner2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/spinner1"
+        android:layout_alignRight="@+id/spinner1"
+        android:layout_alignTop="@+id/textView4" />
+
+    <Button
+        android:id="@+id/button2"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/button1"
+        android:layout_alignTop="@+id/spinner2"
+        android:onClick="webSend2"
+        android:text="Send" />
 
 </RelativeLayout>

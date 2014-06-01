@@ -22,7 +22,9 @@ public class MainActivity extends Activity {
 	public TextView y;
 	public TextView tvIP;
 	public Spinner spinner;
+	public Spinner spinner2;
 	public Button sendBtn;
+	public Button sendBtn2;
 	public String selected;
 	public SharedPreferences sharedPrefs;
 	public Map <String,String> map;
@@ -30,12 +32,14 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		
 		x = (TextView) findViewById(R.id.editText1);
 		y = (TextView) findViewById(R.id.editText2);
 		tvIP = (TextView) findViewById(R.id.textView3);
 		sendBtn = (Button) findViewById(R.id.button1);
+		sendBtn2 = (Button) findViewById(R.id.button2);
 		spinner = (Spinner) findViewById(R.id.spinner1);
+		spinner2 = (Spinner) findViewById(R.id.spinner2);
 		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,R.array.colors, android.R.layout.simple_spinner_item);
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -50,6 +54,7 @@ public class MainActivity extends Activity {
 		map.put("White","r=255&g=255&b=255");
 		tvIP.setText("IP Address: " + sharedPrefs.getString("prefIP", "NULL"));
 		spinner.setAdapter(adapter);
+		spinner2.setAdapter(adapter);
 		sendBtn.setOnClickListener(new View.OnClickListener() {
 		    @Override
 		    public void onClick(View v) {
