@@ -61,10 +61,28 @@ public class MainActivity extends Activity {
 		        webSend(v);
 		    }
 		});
+		sendBtn2.setOnClickListener(new View.OnClickListener() {
+		    @Override
+		    public void onClick(View v) {
+		        webSend2(v);
+		    }
+		});
 	}
 	public void webSend(View v) {
 		String color = spinner.getItemAtPosition(spinner.getSelectedItemPosition()).toString();
-		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "pixel?x=" + x.getText() + "y=" + y.getText() + "&" + map.get(color);
+		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "/pixel?x=" + x.getText() + "y=" + y.getText() + "&" + map.get(color);
+		final ThreadedRequest tReq = new ThreadedRequest(url);
+		tReq.start(new Runnable() 
+		    {
+		        public void run() 
+		        {
+		        }
+		    });
+	}
+	
+	public void webSend2(View v) {
+		String color = spinner.getItemAtPosition(spinner.getSelectedItemPosition()).toString();
+		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "/color?" + map.get(color);
 		final ThreadedRequest tReq = new ThreadedRequest(url);
 		tReq.start(new Runnable() 
 		    {
