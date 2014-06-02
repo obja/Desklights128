@@ -46,7 +46,7 @@ public Map <String,String> map;
 		String spokenText = voiceResults.get(0);
 		card1.setText("Setting the table to " + spokenText);
 		setContentView(card1View);
-		String url = "http://192.168.0.220/color=" + map.get(spokenText);
+		String url = "http://192.168.0.220/color?" + map.get(spokenText);
 		final ThreadedRequest tReq = new ThreadedRequest(url);
 		tReq.start(new Runnable() 
 		    {
@@ -54,7 +54,9 @@ public Map <String,String> map;
 		        {
 		        }
 		    });
+		finish();
 	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main, menu);
