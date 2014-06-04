@@ -57,13 +57,15 @@ static uint8_t ip[] = {
 // LED Stuff
 uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 3; // Green wire on Adafruit Pixels
+
+//LED Grid Stuff
+uint16_t max_x = 16;
+uint16_t max_y = 8;
+
 #define STRIPLEN 128
-Adafruit_WS2801 strip = Adafruit_WS2801(STRIPLEN, dataPin, clockPin, WS2801_RGB);
+Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_RGB); // setting max_x and max_y here lets us use draw functions
 int defaultPattern = 0;
 
-// LED Grid stuff
-int max_x = 16;
-int max_y = 8;
 
 // 'graph' style x,y where 0,0 is bottom left
 
