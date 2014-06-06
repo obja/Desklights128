@@ -71,11 +71,13 @@ Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_
 int defaultPattern = 0;
 
 //ada gfx vars
-int16_t cursor_x = 1;
-int16_t cursor_y = 1;
+int16_t cursor_x_orig = 1;
+int16_t cursor_y_orig = 1;
+int16_t cursor_x = cursor_x_orig;
+int16_t cursor_y = cursor_y_orig;
 uint8_t textsize = 1;
-uint16_t textcolor = Color(255,255,255);
-uint16_t textbgcolor = Color(0,0,0);
+uint32_t textcolor = Color(255,255,255);
+uint32_t textbgcolor = Color(0,0,0);
 boolean wrap = false;
 int16_t _width = max_x;
 int16_t _height = max_y;
@@ -459,6 +461,8 @@ void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tai
 
 void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   colorAll(Color(0,0,0));
+  cursor_x = cursor_x_orig;
+  cursor_y = cursor_y_orig;
   server.printP(ok);
 }
 
