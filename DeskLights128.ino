@@ -509,10 +509,10 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
         use_hex = 1;
         break;
       case 'r':
-        b = atoi(value);
+        r = atoi(value);
         break;
       case 'g':
-        b = atoi(value);
+        g = atoi(value);
         break;
       case 'b':
         b = atoi(value);
