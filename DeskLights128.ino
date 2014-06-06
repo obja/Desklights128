@@ -40,6 +40,8 @@
  */
 
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
+#define WEBDUINO_COMMANDS_COUNT 10
+//commands count should fix the error where newly added commands don't work
 #include "SPI.h"
 #include "avr/pgmspace.h"
 #include "Ethernet.h"
