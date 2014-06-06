@@ -353,7 +353,7 @@ void drawFastVLine(int16_t x, int16_t y,
   drawLine(x, y, x, y+h-1, color);
 }
 
-void drawPixel(int16_t x, int16_t y, uint16_t color)
+void drawPixel(int16_t x, int16_t y, uint32_t color)
 {
   y = y + ((max_y - 1)*-1) + 2 * (max_y - y); //invert the Y axis
   strip.setPixelColor(g2p(x,y), color);
@@ -410,7 +410,7 @@ void fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
 }
 
 void drawChar(int16_t x, int16_t y, unsigned char c,
-			    uint16_t color, uint16_t bg, uint8_t size) {
+			    uint32_t color, uint32_t bg, uint8_t size) {
 
   if((x >= _width)            || // Clip right
      (y >= _height)           || // Clip bottom
