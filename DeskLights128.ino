@@ -70,7 +70,7 @@ int defaultPattern = 0;
 
 //ada gfx vars
 int16_t cursor_x = 1;
-int16_t cursor_y = 0;
+int16_t cursor_y = 1;
 uint8_t textsize = 1;
 uint16_t textcolor = Color(255,255,255);
 uint16_t textbgcolor = Color(0,0,0);
