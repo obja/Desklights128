@@ -351,6 +351,7 @@ void drawFastVLine(int16_t x, int16_t y,
 
 void drawPixel(int16_t x, int16_t y, uint16_t color)
 {
+  y = y + ((max_y - 1)*-1) + 2 * (max_y - y); //invert the Y axis
   strip.setPixelColor(g2p(x,y), color);
 }
 
@@ -445,46 +446,44 @@ void setCursor(int16_t x, int16_t y) { //set text upper left point
 }
 
 
-// begin web handlers
-
-int auth(WebServer &server) {
-  if (AUTH) {
-    if (!server.checkCredentials(CRED)) {
-      server.printP(noauth);
-      return 0;
-    }
-  }
-  server.httpSuccess();
-  return 1;
-}
-
 void cmd_index(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
   server.printP(ok);
 }
 
 void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
 {
-  if (!auth(server)) { 
-    return;
-  }
   server.httpFail();
 }
 
 void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
   colorAll(Color(0,0,0));
   server.printP(ok);
 }
 
-void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
+void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  unsigned char theChar;
+  
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  
+  while(strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+        case 'c':
+           theChar = value[0];
+           break;
+      }
+    }
   }
+  
+  stripwrite(theChar);
+  strip.show();
+  server.printP(ok);
+}
+
+void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int r;
   int g;
   int b;
@@ -524,9 +523,6 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
 }
 
 void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
   int r;
   int g;
   int b;
@@ -571,10 +567,6 @@ void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 }
 
 void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
-
   URLPARAM_RESULT rc;
   char name[NAMELEN];
   char value[VALUELEN];
@@ -592,9 +584,6 @@ void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_ta
 }
 
 void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
   int r;
   int g;
   int b;
@@ -642,18 +631,11 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
 }
 
 void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
   strip.show();
   server.printP(ok);
 }
 
 void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
-
   URLPARAM_RESULT rc;
   char name[NAMELEN];
   char value[VALUELEN];
@@ -686,10 +668,6 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 }
 
 void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  if (!auth(server)) { 
-    return;
-  }
-
   int id;
   int gid;
   int x;
@@ -786,6 +764,7 @@ void setup() {
   webserver.addCommand("pixel", &cmd_pixel);
   webserver.addCommand("default", &cmd_default);
   webserver.addCommand("test", &cmd_test);
+  webserver.addCommand("char", &cmd_writechar);
   webserver.begin();
 
   strip.begin();
