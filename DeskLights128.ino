@@ -127,7 +127,7 @@ P(ok) = "<a href='http://192.168.0.220/alert?h=ffffff&d=1000'>Alert (FFFFFF) 100
 <a href='http://192.168.0.220/alert?h=660033&d=1000'>Alert Purple (660033) 1000ms</a><p> \
 <a href='http://192.168.0.220/default?id=1'>Default 1</a><p> \
 <a href='http://192.168.0.220/default?id=2'>Default 2</a><p> \
-<a href='http://192.168.0.220/default?id=2'>Default 3</a><p> \
+<a href='http://192.168.0.220/default?id=3'>Default 3</a><p> \
 <a href='http://192.168.0.220/off'>All Off</a><p>";
 P(noauth) = "User Denied\n";
 
