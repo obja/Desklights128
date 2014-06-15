@@ -58,7 +58,7 @@ static uint8_t mac[] = {
   0x90, 0xA2, 0xDA, 0xF9, 0x04, 0x2C }; // update this to match your arduino/shield
 static uint8_t ip[] = { 
   192,168,0,220 }; // update this to match your network
-
+String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
 // LED Stuff
 uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 3; // Green wire on Adafruit Pixels
@@ -118,18 +118,24 @@ int grid[STRIPLEN] = {
 WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
-P(ok) = "<a href='http://192.168.0.220/alert?h=ffffff&d=1000'>Alert (FFFFFF) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?r=255&g=255&b=255&d=1000'>Alert (R255 G255 B255) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?h=FF0000&d=1000'>Alert Red (FF0000) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?h=FF6600&d=1000'>Alert Orange (FF6600) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?h=FFFF00&d=1000'>Alert Yellow (FFFF00) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?h=336600&d=1000'>Alert Green (336600) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?h=003333&d=1000'>Alert Blue (003333) 1000ms</a><p> \
-<a href='http://192.168.0.220/alert?h=660033&d=1000'>Alert Purple (660033) 1000ms</a><p> \
-<a href='http://192.168.0.220/default?id=1'>Default 1</a><p> \
-<a href='http://192.168.0.220/default?id=2'>Default 2</a><p> \
-<a href='http://192.168.0.220/default?id=3'>Default 3</a><p> \
-<a href='http://192.168.0.220/off'>All Off</a><p>";
+void printOk(WebServer &server) {
+  server.println("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>"); //opening html
+  server.println("DeskLights128"); //title
+  server.println("</title></head><body>"); //links below here
+  server.println("<a href='http://" + theIP + "/alert?h=ffffff&d=1000'>Alert (FFFFFF) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?r=255&g=255&b=255&d=1000'>Alert (R255 G255 B255) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?h=FF0000&d=1000'>Alert Red (FF0000) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?h=FF6600&d=1000'>Alert Orange (FF6600) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?h=FFFF00&d=1000'>Alert Yellow (FFFF00) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?h=336600&d=1000'>Alert Green (336600) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?h=003333&d=1000'>Alert Blue (003333) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/alert?h=660033&d=1000'>Alert Purple (660033) 1000ms</a><p></p>");
+  server.println("<a href='http://" + theIP + "/default?id=1'>Default 1</a><p></p>");
+  server.println("<a href='http://" + theIP + "/default?id=2'>Default 2</a><p></p>");
+  server.println("<a href='http://" + theIP + "/default?id=3'>Default 3</a><p></p>");
+  server.println("<a href='http://" + theIP + "/off'>All Off</a><p></p>");
+  server.println("</body></html>"); //end html
+}
 P(noauth) = "User Denied\n";
 
 // max length of param names and values
@@ -452,7 +458,7 @@ void setCursor(int16_t x, int16_t y) { //set text upper left point
 
 
 void cmd_index(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  server.printP(ok);
+  printOk(server);
 }
 
 void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
@@ -464,7 +470,7 @@ void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
   colorAll(Color(0,0,0));
   cursor_x = cursor_x_orig;
   cursor_y = cursor_y_orig;
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -487,7 +493,7 @@ void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_
   
   stripwrite(theChar);
   strip.show();
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -526,7 +532,7 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
     c = Color(r,g,b);
   }
   colorAll(c);
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -570,7 +576,7 @@ void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   }
 
   colorWipe(c, delay);
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -587,7 +593,7 @@ void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_ta
     }
   }
 
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -634,12 +640,12 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
   }
 
   alert(c, d);
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   strip.show();
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -671,7 +677,7 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
     break;
   }
 
-  server.printP(ok);
+  printOk(server);
 }
 
 void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -750,7 +756,7 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
     strip.show();
   }
 
-  server.printP(ok);
+  printOk(server);
 }
 
 // begin standard arduino setup and loop pattern
@@ -773,13 +779,14 @@ void setup() {
   webserver.addCommand("pixel", &cmd_pixel);
   webserver.addCommand("default", &cmd_default);
   webserver.addCommand("test", &cmd_test);
-  webserver.addCommand("char", &cmd_writechar);
+  webserver.addCommand("write", &cmd_writechar);
   webserver.begin();
 
   strip.begin();
 
   // light blip of light to signal we are ready to listen
   colorAll(Color(0,0,11));
+  delay(500);
   colorAll(Color(0,0,0));
 }
 
