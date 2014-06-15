@@ -133,7 +133,7 @@ void printOk(WebServer &server) {
   server.println("<a href='http://" + theIP + "/default?id=1'>Default 1</a><p></p>");
   server.println("<a href='http://" + theIP + "/default?id=2'>Default 2</a><p></p>");
   server.println("<a href='http://" + theIP + "/default?id=3'>Default 3</a><p></p>");
-  server.println("<a href='http://" + theIP + "/off'>All Off</a><p></p>");
+  server.println("<a href='http://" + theIP + "/default?id=4'>All Off</a><p></p>");
   server.println("</body></html>"); //end html
 }
 P(noauth) = "User Denied\n";
@@ -808,6 +808,11 @@ void loop()
     break;
   case 3:
     p_cylon();
+    break;
+  case 4:
+    colorAll(Color(0,0,0));
+    cursor_x = cursor_x_orig;
+    cursor_y = cursor_y_orig;
     break;
   }
 }
