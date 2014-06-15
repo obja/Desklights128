@@ -190,6 +190,7 @@ void colorAll(uint32_t c) {
   for (int i=0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, c);
   }
+  defaultPattern = 0;
   strip.show();
 }
 
@@ -197,6 +198,7 @@ void colorAll(uint32_t c) {
 void colorWipe(uint32_t c, uint8_t wait) {
   for (int i=0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, c);
+    defaultPattern = 0;
     strip.show();
     delay(wait);
   }
@@ -250,6 +252,7 @@ void gridTest(int wait) {
 
   for ( x = 0; x <= max_x; x++) {
     for ( y = 0; y <= max_y; y++) {
+      defaultPattern = 0;
       strip.setPixelColor(g2p(x,y), on);
       strip.show();
       delay(wait);
@@ -492,6 +495,7 @@ void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_
   }
   
   stripwrite(theChar);
+  defaultPattern = 0;
   strip.show();
   printOk(server);
 }
@@ -644,6 +648,7 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
 }
 
 void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  defaultPattern = 0;
   strip.show();
   printOk(server);
 }
@@ -756,6 +761,7 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
     strip.show();
   }
 
+  defaultPattern = 0;
   printOk(server);
 }
 
