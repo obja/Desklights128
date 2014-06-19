@@ -122,8 +122,8 @@ void printOk(WebServer &server) {
   server.println("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>"); //opening html
   server.println("DeskLights128"); //title
   server.println("</title></head>");
-  server.println("<script> function process() { var url='http://" + theIP "/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>"); //script for form submitting
-  serial.println("<body>"); //links below here
+  server.println("<script> function process() { var url='http://" + theIP + "/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>"); //script for form submitting
+  server.println("<body>"); //links below here
   server.println("<a href='http://" + theIP + "/alert?h=ffffff&d=1000'>Alert (FFFFFF) 1000ms</a><p></p>");
   server.println("<a href='http://" + theIP + "/alert?r=255&g=255&b=255&d=1000'>Alert (R255 G255 B255) 1000ms</a><p></p>");
   server.println("<a href='http://" + theIP + "/alert?h=FF0000&d=1000'>Alert Red (FF0000) 1000ms</a><p></p>");
