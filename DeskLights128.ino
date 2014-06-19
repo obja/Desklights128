@@ -123,15 +123,16 @@ void printOk(WebServer &server) {
   server.println("DeskLights128"); //title
   server.println("</title></head>");
   server.println("<script> function process() { var url='http://" + theIP + "/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>"); //script for form submitting
+  server.println("<script> function process2() { var urlalert='http://" + theIP + "/alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>"); //script for alert submitting
   server.println("<body>"); //links below here
-  server.println("<a href='http://" + theIP + "/alert?h=ffffff&d=1000'>Alert (FFFFFF) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?r=255&g=255&b=255&d=1000'>Alert (R255 G255 B255) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?h=FF0000&d=1000'>Alert Red (FF0000) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?h=FF6600&d=1000'>Alert Orange (FF6600) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?h=FFFF00&d=1000'>Alert Yellow (FFFF00) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?h=336600&d=1000'>Alert Green (336600) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?h=003333&d=1000'>Alert Blue (003333) 1000ms</a><p></p>");
-  server.println("<a href='http://" + theIP + "/alert?h=660033&d=1000'>Alert Purple (660033) 1000ms</a><p></p>");
+  server.println("<form onSubmit='return process2();'> Send Alert <select id='alert'>"); //form select for Alerts
+  server.println("<option value='FF0000'>Red</option>"); //red
+  server.println("<option value='FF6600'>Orange</option>"); //orange
+  server.println("<option value='FFFF00'>Yellow</option>"); //yellow
+  server.println("<option value='336600'>Green</option>"); //green
+  server.println("<option value='003333'>Blue</option>"); //blue
+  server.println("<option value='660033'>Purple</option>"); //purple
+  server.println("<input type='submit' value='go'> </select> </form>"); //end select
   server.println("<a href='http://" + theIP + "/default?id=1'>Default 1</a><p></p>");
   server.println("<a href='http://" + theIP + "/default?id=2'>Default 2</a><p></p>");
   server.println("<a href='http://" + theIP + "/default?id=3'>Default 3</a><p></p>");
