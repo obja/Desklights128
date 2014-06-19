@@ -124,8 +124,9 @@ void printOk(WebServer &server) {
   server.println("</title></head>");
   server.println("<script> function process() { var url='http://" + theIP + "/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>"); //script for form submitting
   server.println("<script> function process2() { var urlalert='http://" + theIP + "/alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>"); //script for alert submitting
+  server.println("<script> function process3() { var urlalert='http://" + theIP + "/default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>"); //script for default submitting
   server.println("<body>"); //links below here
-  server.println("<form onSubmit='return process2();'> Send Alert <select id='alert'>"); //form select for Alerts
+  server.println("<form onSubmit='return process2();'>Send Alert <select id='alert'>"); //form select for Alerts
   server.println("<option value='FF0000'>Red</option>"); //red
   server.println("<option value='FF6600'>Orange</option>"); //orange
   server.println("<option value='FFFF00'>Yellow</option>"); //yellow
@@ -133,9 +134,11 @@ void printOk(WebServer &server) {
   server.println("<option value='003333'>Blue</option>"); //blue
   server.println("<option value='660033'>Purple</option>"); //purple
   server.println("<input type='submit' value='go'> </select> </form>"); //end select
-  server.println("<a href='http://" + theIP + "/default?id=1'>Default 1</a><p></p>");
-  server.println("<a href='http://" + theIP + "/default?id=2'>Default 2</a><p></p>");
-  server.println("<a href='http://" + theIP + "/default?id=3'>Default 3</a><p></p>");
+  server.println("<form onSubmit='return process3();'>Run Command <select id='default'>"); //form select for Defaults
+  server.println("<option value='1'>Rainbow</option>"); //red
+  server.println("<option value='2'>Random</option>"); //orange
+  server.println("<option value='3'>K.I.T.T.</option>"); //yellow
+  server.println("<input type='submit' value='go'> </select> </form>"); //end select
   server.println("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <input type='submit' value='go'> </form>"); //this writes a single character to the board
   server.println("<a href='http://" + theIP + "/default?id=4'>All Off</a><p></p>");
   server.println("</body></html>"); //end html
