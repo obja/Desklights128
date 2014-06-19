@@ -193,6 +193,13 @@ void colorAll(uint32_t c) {
   defaultPattern = 0;
   strip.show();
 }
+//colorAllDef is just colorAll without the defaultPattern set
+void colorAllDef(uint32_t c) {
+  for (int i=0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+  }
+  strip.show();
+}
 
 // set all pixels to a "Color" value, one at a time, with a delay
 void colorWipe(uint32_t c, uint8_t wait) {
@@ -592,7 +599,7 @@ void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_ta
     if ((rc != URLPARAM_EOS)) {
       if (name[0] == 'i') {
         defaultPattern = atoi(value);
-        colorAll(Color(0,0,0));
+        colorAllDef(Color(0,0,0));
       }
     }
   }
