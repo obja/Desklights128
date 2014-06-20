@@ -108,40 +108,41 @@ int grid[STRIPLEN] = {
 
 /*** Things you might want to change ***/
 
-// basic web auth, not super secure without https
-// see example at https://github.com/sirleech/Webduino
-// use auth?
-#define AUTH 0
-// credentials (in base64 user:pass)
-#define CRED "dXNlcjpwYXNz"
-
 WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
 void printOk(WebServer &server) {
-  server.println("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>"); //opening html
-  server.println("DeskLights128"); //title
-  server.println("</title></head>");
-  server.println("<script> function process() { var url='http://" + theIP + "/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>"); //script for form submitting
-  server.println("<script> function process2() { var urlalert='http://" + theIP + "/alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>"); //script for alert submitting
-  server.println("<script> function process3() { var urlalert='http://" + theIP + "/default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>"); //script for default submitting
-  server.println("<body>"); //links below here
-  server.println("<form onSubmit='return process2();'>Send Alert <select id='alert'>"); //form select for Alerts
-  server.println("<option value='FF0000'>Red</option>"); //red
-  server.println("<option value='FF6600'>Orange</option>"); //orange
-  server.println("<option value='FFFF00'>Yellow</option>"); //yellow
-  server.println("<option value='336600'>Green</option>"); //green
-  server.println("<option value='003333'>Blue</option>"); //blue
-  server.println("<option value='660033'>Purple</option>"); //purple
-  server.println("<input type='submit' value='go'> </select> </form>"); //end select
-  server.println("<form onSubmit='return process3();'>Run Command <select id='default'>"); //form select for Defaults
-  server.println("<option value='1'>Rainbow</option>"); //red
-  server.println("<option value='2'>Random</option>"); //orange
-  server.println("<option value='3'>K.I.T.T.</option>"); //yellow
-  server.println("<input type='submit' value='go'> </select> </form>"); //end select
-  server.println("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <input type='submit' value='go'> </form>"); //this writes a single character to the board
-  server.println("<a href='http://" + theIP + "/default?id=4'>All Off</a><p></p>");
-  server.println("</body></html>"); //end html
+  server.println(F("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>")); //opening html
+  server.println(F("DeskLights128")); //title
+  server.println(F("</title></head>"));
+  server.print(F("<script> function process() { var url='http://"));
+  server.print(theIP);
+  server.println(F("/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>")); //script for form submitting
+  server.print(F("<script> function process2() { var urlalert='http://"));
+  server.print(theIP);
+  server.println(F("/alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>")); //script for alert submitting
+  server.print(F("<script> function process3() { var urlalert='http://"));
+  server.print(theIP);
+  server.println(F("/default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>")); //script for default submitting
+  server.println(F("<body>")); //links below here
+  server.println(F("<form onSubmit='return process2();'>Send Alert <select id='alert'>")); //form select for Alerts
+  server.println(F("<option value='FF0000'>Red</option>")); //red
+  server.println(F("<option value='FF6600'>Orange</option>")); //orange
+  server.println(F("<option value='FFFF00'>Yellow</option>")); //yellow
+  server.println(F("<option value='336600'>Green</option>")); //green
+  server.println(F("<option value='003333'>Blue</option>")); //blue
+  server.println(F("<option value='660033'>Purple</option>")); //purple
+  server.println(F("<input type='submit' value='go'> </select> </form>")); //end select
+  server.println(F("<form onSubmit='return process3();'>Run Command <select id='default'>")); //form select for Defaults
+  server.println(F("<option value='1'>Rainbow</option>")); //red
+  server.println(F("<option value='2'>Random</option>")); //orange
+  server.println(F("<option value='3'>K.I.T.T.</option>")); //yellow
+  server.println(F("<input type='submit' value='go'> </select> </form>")); //end select
+  server.println(F("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <input type='submit' value='go'> </form>")); //this writes a single character to the board
+  server.print(F("<a href='http://"));
+  server.print(theIP);
+  server.println(F("/default?id=4'>All Off</a><p></p>"));
+  server.println(F("</body></html>")); //end html
 }
 P(noauth) = "User Denied\n";
 
@@ -150,13 +151,6 @@ P(noauth) = "User Denied\n";
 #define VALUELEN 32
 
 /*** Below here shouldn't need to change ***/
-
-void log(char * input) {
-  if (1) {
-    Serial.println(input);
-  }
-}
-
 // LED support functions
 
 // create the "Color" value from rgb...This is right from Adafruit
@@ -217,7 +211,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
     delay(wait);
   }
 }
-
+/*
 // fade from one color to another: UNFINISHED
 void fade(uint32_t c1, uint32_t c2, int wait) {
   if (c1 < c2) {
@@ -232,7 +226,7 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
       delay(wait);
     }
   }
-}
+}*/
 
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
@@ -247,13 +241,12 @@ int g2p(int x, int y) {
 
 // flash color "c" for "wait" ms
 void alert(uint32_t c, int wait) {
-  log("executing alert");
   colorAll(c);
   delay(wait);
   colorAll(Color(0,0,0));
 }
 
-// show the grid to verify
+/* // show the grid to verify
 void gridTest(int wait) {
   int x;
   int y;
@@ -274,8 +267,8 @@ void gridTest(int wait) {
       strip.show();
     }
   }
-}
-
+}*/
+/*
 // wipe the major colors through all pixels
 void lightTest(int wait) {
   colorWipe(Color(255, 0, 0), wait);
@@ -283,7 +276,7 @@ void lightTest(int wait) {
   colorWipe(Color(0, 0, 255), wait);
   colorWipe(Color(255, 255, 255), wait);
   colorWipe(Color(0, 0, 0), wait);
-}
+}*/
 
 // next are the patterns, meant to loop
 // use caution here, these block the server listening
@@ -578,7 +571,7 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
   colorAll(c);
   printOk(server);
 }
-
+/*
 void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int r;
   int g;
@@ -621,7 +614,7 @@ void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 
   colorWipe(c, delay);
   printOk(server);
-}
+}*/
 
 void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   URLPARAM_RESULT rc;
@@ -692,7 +685,7 @@ void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   strip.show();
   printOk(server);
 }
-
+/*
 void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   URLPARAM_RESULT rc;
   char name[NAMELEN];
@@ -723,7 +716,7 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   }
 
   printOk(server);
-}
+}*/
 
 void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   String inputData;
@@ -736,7 +729,10 @@ void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, b
     if ((rc != URLPARAM_EOS)) {
       switch(name[0]) {
         case 'v':
-        inputData = String((value[0] - '0')) + String((value[1] - '0')) + String((value[2] - '0')) + String((value[3] - '0')) + String((value[4] - '0')) + String((value[5] - '0')) + String((value[6] - '0')) + String((value[7] - '0')) + String((value[8] - '0')) + String((value[9] - '0')) + String((value[10] - '0')) + String((value[11] - '0')) + String((value[12] - '0')) + String((value[13] - '0')) + String((value[14] - '0')) + String((value[15] - '0'));
+        for(int i = 0; i<16; i++) {
+          inputData += String(value[i] - '0');
+        }
+        //inputData = String((value[0] - '0')) + String((value[1] - '0')) + String((value[2] - '0')) + String((value[3] - '0')) + String((value[4] - '0')) + String((value[5] - '0')) + String((value[6] - '0')) + String((value[7] - '0')) + String((value[8] - '0')) + String((value[9] - '0')) + String((value[10] - '0')) + String((value[11] - '0')) + String((value[12] - '0')) + String((value[13] - '0')) + String((value[14] - '0')) + String((value[15] - '0'));
         break;
       }
     }
@@ -767,8 +763,6 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
   while (strlen(url_tail)) {
     rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
     if ((rc != URLPARAM_EOS)) {
-      log(name);
-      log(value);
       switch(name[0]) {
       case 'i':
         gid = atoi(value);
@@ -841,12 +835,12 @@ void setup() {
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
   webserver.addCommand("show", &cmd_show);
-  webserver.addCommand("wipe", &cmd_wipe);
+  //webserver.addCommand("wipe", &cmd_wipe);
   webserver.addCommand("color", &cmd_color);
   webserver.addCommand("alert", &cmd_alert);
   webserver.addCommand("pixel", &cmd_pixel);
   webserver.addCommand("default", &cmd_default);
-  webserver.addCommand("test", &cmd_test);
+  //webserver.addCommand("test", &cmd_test);
   webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
