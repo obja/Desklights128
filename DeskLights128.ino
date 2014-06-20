@@ -45,7 +45,7 @@
 #include "SPI.h"
 #include "avr/pgmspace.h"
 #include "Ethernet.h"
-#include "EthernetBonjour.h"
+//#include "EthernetBonjour.h"
 #include "WebServer.h"
 #include <Adafruit_WS2801.h>
 #include "Adafruit_GFX.h"
@@ -835,8 +835,8 @@ void setup() {
   //TODO: I think I've run out of memory, consolidate "tests"
   Ethernet.begin(mac,ip);
   Serial.println(Ethernet.localIP());
-  EthernetBonjour.begin("DeskLights");
-  EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
+  //EthernetBonjour.begin("DeskLights");
+  //EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
@@ -861,7 +861,7 @@ void setup() {
 
 void loop()
 {
-  EthernetBonjour.run();
+  //EthernetBonjour.run();
   // listen for connections
   char buff[64];
   int len = 64;
