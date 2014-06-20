@@ -352,6 +352,32 @@ void p_cylon() {
   }
 
 }
+
+void vu(String input) {
+  uint32_t color = Color(255,0,0);
+  for(int i = 0; i<16; i++) {
+    int y = input.charAt(i) - '0';
+    if(y > max_y) {
+      y = max_y;
+    }
+    if(y < 1) {
+      for(y = 1; y<max_y+1; y++) {
+        strip.setPixelColor(g2p(i+1,y), Color(0,0,0));
+      }
+    }
+    else {
+      int y_orig = y;
+      for(y; y>0; y--) {
+        strip.setPixelColor(g2p(i+1,y), color);
+      }
+      y = y_orig+1;
+      for(y; y<max_y+1; y++) {
+        strip.setPixelColor(g2p(i+1,y), Color(0,0,0));
+      }
+    }
+  }
+}
+
  //adafruit_gfx addons
 void stripwrite(uint8_t c) {
   if (c == '\n') {
@@ -699,6 +725,28 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   printOk(server);
 }
 
+void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  String inputData;
+  
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+        case 'v':
+        inputData = String((value[0] - '0')) + String((value[1] - '0')) + String((value[2] - '0')) + String((value[3] - '0')) + String((value[4] - '0')) + String((value[5] - '0')) + String((value[6] - '0')) + String((value[7] - '0')) + String((value[8] - '0')) + String((value[9] - '0')) + String((value[10] - '0')) + String((value[11] - '0')) + String((value[12] - '0')) + String((value[13] - '0')) + String((value[14] - '0')) + String((value[15] - '0'));
+        break;
+      }
+    }
+  }
+  vu(inputData);
+  strip.show();
+  defaultPattern = 0;
+  printOk(server);
+}
+
 void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int id;
   int gid;
@@ -800,6 +848,7 @@ void setup() {
   webserver.addCommand("default", &cmd_default);
   webserver.addCommand("test", &cmd_test);
   webserver.addCommand("write", &cmd_writechar);
+  webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
 
   strip.begin();
