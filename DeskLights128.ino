@@ -45,6 +45,7 @@
 #include "SPI.h"
 #include "avr/pgmspace.h"
 #include "Ethernet.h"
+#include "EthernetUdp.h"
 //#include "EthernetBonjour.h"
 #include "WebServer.h"
 #include <Adafruit_WS2801.h>
@@ -57,8 +58,11 @@
 static uint8_t mac[] = { 
   0x90, 0xA2, 0xDA, 0xF9, 0x04, 0x2C }; // update this to match your arduino/shield
 static uint8_t ip[] = { 
-  192,168,1,220 }; // update this to match your network
+  192,168,0,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+EthernetUDP Udp;
+unsigned int localPort = 8888;
 // LED Stuff
 uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 3; // Green wire on Adafruit Pixels
@@ -840,6 +844,7 @@ void setup() {
   webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
+  Udp.begin(localPort);
 
   strip.begin();
 
@@ -856,6 +861,12 @@ void loop()
   char buff[64];
   int len = 64;
   webserver.processConnection(buff, &len);
+  int packetSize = Udp.parsePacket();
+  if(packetSize) {
+    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
+    vu(packetBuffer);
+    strip.show();
+  }
 
   // run the default pattern
   switch(defaultPattern) {
