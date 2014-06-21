@@ -9,10 +9,10 @@
 *.class
 
 # Generated files
-DeskLights128.glass/bin/
-DeskLights128.glass/gen/
-DeskLights128.phone/bin/
-DeskLights128.phone/gen/
+DeskLights128.glass/bin/*
+DeskLights128.glass/gen/*
+DeskLights128.phone/bin/*
+DeskLights128.phone/gen/*
 
 # Gradle files
 .gradle/
