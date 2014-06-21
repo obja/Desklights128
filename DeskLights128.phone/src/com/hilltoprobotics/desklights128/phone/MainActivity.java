@@ -157,6 +157,11 @@ public class MainActivity extends Activity {
 					Log.v("pebblestuff","websend 3, cylon");
 					break;
 				}
+				case 9: {
+					webSend3("off");
+					Log.v("pebblestuff","websend 3, off");
+					break;
+				}
 				}
 			}
 		};
@@ -175,7 +180,7 @@ public class MainActivity extends Activity {
 	}
 	
 	public void webSend2(View v) {
-		String color = spinner2.getItemAtPosition(spinner.getSelectedItemPosition()).toString();
+		String color = spinner2.getItemAtPosition(spinner2.getSelectedItemPosition()).toString();
 		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "/color?" + map.get(color);
 		final ThreadedRequest tReq = new ThreadedRequest(url);
 		tReq.start(new Runnable() 
