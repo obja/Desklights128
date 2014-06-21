@@ -3,6 +3,8 @@ package com.hilltoprobotics.desklights128.phone;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.getpebble.android.kit.PebbleKit;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,12 +22,14 @@ public class MainActivity extends Activity {
 
 	public TextView x;
 	public TextView y;
+	public TextView pebbleText;
 	public TextView tvIP;
 	public Spinner spinner;
 	public Spinner spinner2;
 	public Button sendBtn;
 	public Button sendBtn2;
 	public String selected;
+	public boolean connected = false;
 	public SharedPreferences sharedPrefs;
 	public Map <String,String> map;
 	@Override
@@ -36,6 +40,7 @@ public class MainActivity extends Activity {
 		x = (TextView) findViewById(R.id.editText1);
 		y = (TextView) findViewById(R.id.editText2);
 		tvIP = (TextView) findViewById(R.id.textView3);
+		pebbleText = (TextView) findViewById(R.id.textView5);
 		sendBtn = (Button) findViewById(R.id.button1);
 		sendBtn2 = (Button) findViewById(R.id.button2);
 		spinner = (Spinner) findViewById(R.id.spinner1);
@@ -43,6 +48,14 @@ public class MainActivity extends Activity {
 		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,R.array.colors, android.R.layout.simple_spinner_item);
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+		
+		connected = PebbleKit.isWatchConnected(getApplicationContext());
+		if(connected) {
+			pebbleText.setText("Pebble connected");
+		}
+		else {
+			pebbleText.setText("Pebbledisconnected");
+		}
 		map =  new HashMap<String,String>();
 		map.put("Red","r=255&g=0&b=0");
 		map.put("Orange","r=255&g=160&b=0");
@@ -67,6 +80,10 @@ public class MainActivity extends Activity {
 		        webSend2(v);
 		    }
 		});
+	}
+	protected void onResume() {
+		super.onResume();
+		tvIP.setText("IP Address: " + sharedPrefs.getString("prefIP", "NULL"));
 	}
 	public void webSend(View v) {
 		String color = spinner.getItemAtPosition(spinner.getSelectedItemPosition()).toString();

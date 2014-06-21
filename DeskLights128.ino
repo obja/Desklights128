@@ -115,15 +115,9 @@ void printOk(WebServer &server) {
   server.println(F("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>")); //opening html
   server.println(F("DeskLights128")); //title
   server.println(F("</title></head>"));
-  server.print(F("<script> function process() { var url='http://"));
-  server.print(theIP);
-  server.println(F("/write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>")); //script for form submitting
-  server.print(F("<script> function process2() { var urlalert='http://"));
-  server.print(theIP);
-  server.println(F("/alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>")); //script for alert submitting
-  server.print(F("<script> function process3() { var urlalert='http://"));
-  server.print(theIP);
-  server.println(F("/default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>")); //script for default submitting
+  server.print(F("<script> function process() { var url='write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>")); //script for form submitting
+  server.print(F("<script> function process2() { var urlalert='alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>")); //script for alert submitting
+  server.print(F("<script> function process3() { var urlalert='default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>")); //script for default submitting
   server.println(F("<body>")); //links below here
   server.println(F("<form onSubmit='return process2();'>Send Alert <select id='alert'>")); //form select for Alerts
   server.println(F("<option value='FF0000'>Red</option>")); //red
@@ -139,9 +133,7 @@ void printOk(WebServer &server) {
   server.println(F("<option value='3'>K.I.T.T.</option>")); //yellow
   server.println(F("<input type='submit' value='go'> </select> </form>")); //end select
   server.println(F("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <input type='submit' value='go'> </form>")); //this writes a single character to the board
-  server.print(F("<a href='http://"));
-  server.print(theIP);
-  server.println(F("/default?id=4'>All Off</a><p></p>"));
+  server.print(F("<a href='default?id=4'>All Off</a><p></p>"));
   server.println(F("</body></html>")); //end html
 }
 P(noauth) = "User Denied\n";
