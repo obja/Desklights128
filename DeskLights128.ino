@@ -57,7 +57,7 @@
 static uint8_t mac[] = { 
   0x90, 0xA2, 0xDA, 0xF9, 0x04, 0x2C }; // update this to match your arduino/shield
 static uint8_t ip[] = { 
-  192,168,0,220 }; // update this to match your network
+  192,168,1,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
 // LED Stuff
 uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
@@ -112,6 +112,10 @@ WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
 void printOk(WebServer &server) {
+  server.println(F("HTTP/1.1 200 OK"));
+  server.println(F("Content-Type: text/html"));
+  server.println(F("Connection: close"));
+  server.print(F("\r\n"));
   server.println(F("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>")); //opening html
   server.println(F("DeskLights128")); //title
   server.println(F("</title></head>"));
