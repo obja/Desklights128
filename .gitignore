@@ -26,3 +26,16 @@ proguard/
 DeskLights128.phone/bin/jarlist.cache
 DeskLights128.phone/gen/com/hilltoprobotics/desklights128/phone/BuildConfig.java
 *.cache
+DeskLights128.phone/bin/classes/com/hilltoprobotics/desklights128/phone/MainActivity$1.class
+DeskLights128.phone/bin/classes/com/hilltoprobotics/desklights128/phone/MainActivity$2.class
+DeskLights128.phone/bin/classes/com/hilltoprobotics/desklights128/phone/MainActivity.class
+*.apk
+*.dex
+*.class
+*.ap_
+DeskLights128.phone/bin/DeskLights128.phone.apk
+DeskLights128.phone/bin/classes.dex
+DeskLights128.phone/bin/classes/com/hilltoprobotics/desklights128/phone/MainActivity$1.class
+DeskLights128.phone/bin/classes/com/hilltoprobotics/desklights128/phone/MainActivity$2.class
+DeskLights128.phone/bin/classes/com/hilltoprobotics/desklights128/phone/MainActivity.class
+DeskLights128.phone/bin/resources.ap_

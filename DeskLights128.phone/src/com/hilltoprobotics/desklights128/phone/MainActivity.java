@@ -2,14 +2,19 @@ package com.hilltoprobotics.desklights128.phone;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.getpebble.android.kit.PebbleKit;
+import com.getpebble.android.kit.PebbleKit.PebbleDataReceiver;
+import com.getpebble.android.kit.util.PebbleDictionary;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,6 +25,8 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
+	private static final UUID APP_UUID = UUID.fromString("07a3fb4a-b4e5-4a98-9a5a-58bedcaf132f");
+	private static final int DATA_KEY = 0;
 	public TextView x;
 	public TextView y;
 	public TextView pebbleText;
@@ -54,7 +61,7 @@ public class MainActivity extends Activity {
 			pebbleText.setText("Pebble connected");
 		}
 		else {
-			pebbleText.setText("Pebbledisconnected");
+			pebbleText.setText("Pebble disconnected");
 		}
 		map =  new HashMap<String,String>();
 		map.put("Red","r=255&g=0&b=0");
@@ -84,6 +91,76 @@ public class MainActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		tvIP.setText("IP Address: " + sharedPrefs.getString("prefIP", "NULL"));
+		connected = PebbleKit.isWatchConnected(getApplicationContext());
+		if(connected) {
+			pebbleText.setText("Pebble connected");
+		}
+		else {
+			pebbleText.setText("Pebbledisconnected");
+		}
+		
+		PebbleKit.startAppOnPebble(getApplicationContext(), APP_UUID);
+		PebbleDataReceiver dataHandler;
+		dataHandler = new PebbleKit.PebbleDataReceiver(APP_UUID) {
+			public void receiveData(Context context, int transactionId, PebbleDictionary data) {
+				PebbleKit.sendAckToPebble(context, transactionId);
+				int theData = data.getUnsignedInteger(DATA_KEY).intValue();
+				
+				switch(theData) {
+				case 0: {
+					webSend3("color?h=FF0000");
+					Log.v("pebblestuff","websend 3, red");
+					break;
+					//send url to make table red
+				}
+				case 1: {
+					webSend3("color?h=FF6600");
+					Log.v("pebblestuff","websend 3, orange");
+					break;
+					//send url to make table red
+				}
+				case 2: {
+					webSend3("color?h=FFFF00");
+					Log.v("pebblestuff","websend 3, yellow");
+					break;
+					//send url to make table red
+				}
+				case 3: {
+					webSend3("color?h=336600");
+					Log.v("pebblestuff","websend 3, green");
+					break;
+					//send url to make table red
+				}
+				case 4: {
+					webSend3("color?h=003333");
+					Log.v("pebblestuff","websend 3, blue");
+					break;
+					//send url to make table red
+				}
+				case 5: {
+					webSend3("color?h=330033");
+					Log.v("pebblestuff","websend 3, purple");
+					break;
+				}
+				case 6: {
+					webSend3("default?id=1");
+					Log.v("pebblestuff","websend 3, rainbow");
+					break;
+				}
+				case 7: {
+					webSend3("default?id=2");
+					Log.v("pebblestuff","websend 3, random");
+					break;
+				}
+				case 8: {
+					webSend3("default?id=3");
+					Log.v("pebblestuff","websend 3, cylon");
+					break;
+				}
+				}
+			}
+		};
+		PebbleKit.registerReceivedDataHandler(getApplicationContext(), dataHandler);
 	}
 	public void webSend(View v) {
 		String color = spinner.getItemAtPosition(spinner.getSelectedItemPosition()).toString();
@@ -100,6 +177,18 @@ public class MainActivity extends Activity {
 	public void webSend2(View v) {
 		String color = spinner2.getItemAtPosition(spinner.getSelectedItemPosition()).toString();
 		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "/color?" + map.get(color);
+		final ThreadedRequest tReq = new ThreadedRequest(url);
+		tReq.start(new Runnable() 
+		    {
+		        public void run() 
+		        {
+		        }
+		    });
+	}
+	
+	public void webSend3(String theColor) {
+		Log.v("test", theColor);
+		String url = "http://" + sharedPrefs.getString("prefIP", "NULL") + "/" + theColor;
 		final ThreadedRequest tReq = new ThreadedRequest(url);
 		tReq.start(new Runnable() 
 		    {
