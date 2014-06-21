@@ -25,3 +25,4 @@ local.properties
 proguard/
 DeskLights128.phone/bin/jarlist.cache
 DeskLights128.phone/gen/com/hilltoprobotics/desklights128/phone/BuildConfig.java
+*.cache
