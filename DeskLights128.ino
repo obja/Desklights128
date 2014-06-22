@@ -55,11 +55,15 @@
 /*** This is what you will almost certainly have to change ***/
 
 // WEB stuff
-static uint8_t mac[] = { 
-  0x90, 0xA2, 0xDA, 0xF9, 0x04, 0x2C }; // update this to match your arduino/shield
-static uint8_t ip[] = { 
-  192,168,0,220 }; // update this to match your network
+static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0x2C }; // update this to match your arduino/shield
+static uint8_t ip[] = {   192,168,0,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
+//secondary tables web client
+boolean tableTwo = true; //set to false to disable tableTwo
+EthernetClient client;
+IPAddress tableTwoIP(192,168,0,221); //this is the second table
+String tableTwoIPStr = (String)tableTwoIP[0] +  "." + (String)tableTwoIP[1] + "." + (String)tableTwoIP[2] + "." + (String)tableTwoIP[3];
+//UDP stuff
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP Udp;
 unsigned int localPort = 8888;
@@ -469,14 +473,54 @@ void drawChar(int16_t x, int16_t y, unsigned char c,
       line = pgm_read_byte(font+(c*5)+i);
     for (int8_t j = 0; j<8; j++) {
       if (line & 0x1) {
-        if (size == 1) // default size
-          drawPixel(x+i, y+j, color);
+        if (size == 1) {// default size
+          if(x+i > max_x) { //it's wider than the table
+            if(tableTwo) {
+              if(client.connect(tableTwoIP, 7080)) {
+                client.print(F("GET /pixel?x="));
+                client.print(x+i-(max_x));
+                client.print(F("&y="));
+                client.print(y+j);
+                client.print(F("&h="));
+                client.println(color);
+                client.print(F("Host: "));
+                client.println(tableTwoIPStr);
+                client.println(F("Connection: close"));
+                client.println(F(""));
+                client.stop();
+              }
+            }
+          }
+          else {
+            drawPixel(x+i, y+j, color);
+          }
+        }
         else {  // big size
           fillRect(x+(i*size), y+(j*size), size, size, color);
         } 
       } else if (bg != color) {
-        if (size == 1) // default size
-          drawPixel(x+i, y+j, bg);
+        if (size == 1) { // default size
+        if(x+i > max_x) { //it's wider than the table
+            if(tableTwo) {
+              if(client.connect(tableTwoIP, 7080)) {
+                client.print(F("GET /pixel?x="));
+                client.print(x+i-(max_x));
+                client.print(F("&y="));
+                client.print(y+j);
+                client.print(F("&h="));
+                client.println(bg);
+                client.print(F("Host: "));
+                client.println(tableTwoIPStr);
+                client.println(F("Connection: close"));
+                client.println(F(""));
+                client.stop();
+              }
+            }
+          }
+          else {
+            drawPixel(x+i, y+j, bg);
+          }
+        }
         else {  // big size
           fillRect(x+i*size, y+j*size, size, size, bg);
         }
