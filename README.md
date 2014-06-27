@@ -17,5 +17,14 @@ would set 1,1 to on
 the entire column 8 & 9 etc
 4. The web page response has had commands added and correct HTML headers to work with Safari
 
-## Google Glass Application
+## Google Glass Application Source
 http://github.com/AlecH92/DeskLights128.glass
+
+## Android Application Source
+https://github.com/AlecH92/DeskLights128.phone
+
+## Pebble Application Source
+https://github.com/AlecH92/DeskLights128.pebble
+
+## Winamp Connector Application Source (for use with the VU command)
+https://github.com/AlecH92/DeskLights128.winamp
