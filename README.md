@@ -21,7 +21,7 @@ would set
 4. The web page response has had commands added and correct HTML headers to work with Safari
 
 ## Google Glass Application Source
-http://github.com/AlecH92/DeskLights128.glass
+https://github.com/AlecH92/DeskLights128.glass
 
 ## Android Application Source
 https://github.com/AlecH92/DeskLights128.phone
