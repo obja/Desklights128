@@ -41,12 +41,13 @@
 
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 10
+
 //commands count should fix the error where newly added commands don't work
 #include "SPI.h"
 #include "avr/pgmspace.h"
 #include "Ethernet.h"
 #include "EthernetUdp.h"
-//#include "EthernetBonjour.h"
+#include "EthernetBonjour.h"
 #include "WebServer.h"
 #include <Adafruit_WS2801.h>
 #include "Adafruit_GFX.h"
@@ -55,7 +56,7 @@
 /*** This is what you will almost certainly have to change ***/
 
 // WEB stuff
-static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0x2C }; // update this to match your arduino/shield
+static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to match your arduino/shield
 static uint8_t ip[] = {   192,168,0,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
 //secondary tables web client
@@ -215,7 +216,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
     delay(wait);
   }
 }
-/*
+
 // fade from one color to another: UNFINISHED
 void fade(uint32_t c1, uint32_t c2, int wait) {
   if (c1 < c2) {
@@ -230,7 +231,7 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
       delay(wait);
     }
   }
-}*/
+}
 
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
@@ -250,7 +251,7 @@ void alert(uint32_t c, int wait) {
   colorAll(Color(0,0,0));
 }
 
-/* // show the grid to verify
+ // show the grid to verify
 void gridTest(int wait) {
   int x;
   int y;
@@ -271,8 +272,8 @@ void gridTest(int wait) {
       strip.show();
     }
   }
-}*/
-/*
+}
+
 // wipe the major colors through all pixels
 void lightTest(int wait) {
   colorWipe(Color(255, 0, 0), wait);
@@ -280,7 +281,7 @@ void lightTest(int wait) {
   colorWipe(Color(0, 0, 255), wait);
   colorWipe(Color(255, 255, 255), wait);
   colorWipe(Color(0, 0, 0), wait);
-}*/
+}
 
 // next are the patterns, meant to loop
 // use caution here, these block the server listening
@@ -615,7 +616,7 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
   colorAll(c);
   printOk(server);
 }
-/*
+
 void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int r;
   int g;
@@ -658,7 +659,7 @@ void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 
   colorWipe(c, delay);
   printOk(server);
-}*/
+}
 
 void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   URLPARAM_RESULT rc;
@@ -729,7 +730,7 @@ void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   strip.show();
   printOk(server);
 }
-/*
+
 void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   URLPARAM_RESULT rc;
   char name[NAMELEN];
@@ -760,7 +761,7 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   }
 
   printOk(server);
-}*/
+}
 
 void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   String inputData;
@@ -776,7 +777,6 @@ void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, b
         for(int i = 0; i<16; i++) {
           inputData += String(value[i] - '0');
         }
-        //inputData = String((value[0] - '0')) + String((value[1] - '0')) + String((value[2] - '0')) + String((value[3] - '0')) + String((value[4] - '0')) + String((value[5] - '0')) + String((value[6] - '0')) + String((value[7] - '0')) + String((value[8] - '0')) + String((value[9] - '0')) + String((value[10] - '0')) + String((value[11] - '0')) + String((value[12] - '0')) + String((value[13] - '0')) + String((value[14] - '0')) + String((value[15] - '0'));
         break;
       }
     }
@@ -873,18 +873,18 @@ void setup() {
   //TODO: I think I've run out of memory, consolidate "tests"
   Ethernet.begin(mac,ip);
   Serial.println(Ethernet.localIP());
-  //EthernetBonjour.begin("DeskLights");
-  //EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
+  EthernetBonjour.begin("DeskLights");
+  EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
   webserver.addCommand("show", &cmd_show);
-  //webserver.addCommand("wipe", &cmd_wipe);
+  webserver.addCommand("wipe", &cmd_wipe);
   webserver.addCommand("color", &cmd_color);
   webserver.addCommand("alert", &cmd_alert);
   webserver.addCommand("pixel", &cmd_pixel);
   webserver.addCommand("default", &cmd_default);
-  //webserver.addCommand("test", &cmd_test);
+  webserver.addCommand("test", &cmd_test);
   webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
