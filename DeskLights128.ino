@@ -42,6 +42,8 @@
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 10
 
+#define ISMATRIX
+
 //commands count should fix the error where newly added commands don't work
 #include "SPI.h"
 #include "avr/pgmspace.h"
@@ -52,6 +54,9 @@
 #include <Adafruit_WS2801.h>
 #include "Adafruit_GFX.h"
 #include "glcdfont.c"
+#if defined (ISMATRIX)
+#include <Adafruit_2801Matrix.h>
+#endif
 
 /*** This is what you will almost certainly have to change ***/
 
@@ -77,8 +82,14 @@ uint16_t max_x = 16;
 uint16_t max_y = 8;
 
 #define STRIPLEN 128
-Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_RGB); // setting max_x and max_y here lets us use draw functions
 int defaultPattern = 0;
+#if defined (ISMATRIX)
+Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,
+NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
+WS2801_RGB);
+#else
+Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_RGB); // setting max_x and max_y here lets us use draw functions
+#endif
 
 //ada gfx vars
 int16_t cursor_x_orig = 1;
@@ -208,6 +219,262 @@ uint32_t Wheel(byte WheelPos) {
   }
 }
 
+#if defined (ISMATRIX)
+// set all pixels to a "Color" value
+void colorAll(uint32_t c) {
+  for (int i=0; i < theMatrix.numPixels(); i++) {
+    theMatrix.setPixelColor(i, c);
+  }
+  defaultPattern = 0;
+  theMatrix.show();
+}
+//colorAllDef is just colorAll without the defaultPattern set
+void colorAllDef(uint32_t c) {
+  for (int i=0; i < theMatrix.numPixels(); i++) {
+    theMatrix.setPixelColor(i, c);
+  }
+  theMatrix.show();
+}
+// set all pixels to a "Color" value, one at a time, with a delay
+void colorWipe(uint32_t c, uint8_t wait) {
+  for (int i=0; i < theMatrix.numPixels(); i++) {
+    theMatrix.setPixelColor(i, c);
+    defaultPattern = 0;
+    theMatrix.show();
+    delay(wait);
+  }
+}
+// show the grid to verify
+void gridTest(int wait) {
+  int x;
+  int y;
+  uint32_t on = Color(255,255,255);
+  uint32_t off = Color(0,0,0);
+
+  if (!wait) {
+    wait = 250;
+  }
+
+  for ( x = 0; x <= max_x; x++) {
+    for ( y = 0; y <= max_y; y++) {
+      defaultPattern = 0;
+      theMatrix.setPixelColor(g2p(x,y), on);
+      theMatrix.show();
+      delay(wait);
+      theMatrix.setPixelColor(g2p(x,y), off);
+      theMatrix.show();
+    }
+  }
+}
+// random pixel, random color
+// short pattern, very responsive
+void p_random (int wait) {
+  theMatrix.setPixelColor(
+  random(0, theMatrix.numPixels()),
+  Color(random(0,255), random(0,255), random(0,255))
+    );
+  theMatrix.show();
+  delay(wait);
+}
+
+// If you were at maker faire, you know this pattern
+// it takes about a second to run, so new requests will wait
+void p_rainbow() {
+  int i, j;
+  for (j=0; j < 256; j++) {
+    for (i=0; i < theMatrix.numPixels(); i++) {
+      theMatrix.setPixelColor(i, Wheel( ((i * 256 / theMatrix.numPixels()) + j) % 256) );
+    }
+    theMatrix.show();
+  }
+}
+
+// cylon or K.I.T.T. whichever 
+void p_cylon(uint32_t c[6]) {
+  int x;
+  int wait=75;
+
+  for (x=0; x <= max_x; x++) {
+    int mod = 0;
+    while ((mod < 6) && (x - mod >= 0)) {
+      int y = 0;
+      while (y <= max_y) {
+        theMatrix.setPixelColor(g2p(x-mod,y++), c[mod]);
+      }
+      mod++;
+    }
+    theMatrix.show();
+    delay(wait);
+  }
+
+  for (x=max_x; x >= 0; x--) {
+    int mod = 0;
+    while ((mod < 6) && (x + mod <= max_x)) {
+      int y = 0;
+      while (y <= max_y) {
+        theMatrix.setPixelColor(g2p(x+mod,y++), c[mod]);
+      }
+      mod++;
+    }
+    theMatrix.show();
+    delay(wait);
+  }
+
+}
+//visualizer, takes string of 16 numbers which are Y heights
+void vu(String input) {
+  uint32_t color = Color(255,0,0);
+  for(int i = 0; i<16; i++) {
+    int y = input.charAt(i) - '0';
+    if(y > max_y) {
+      y = max_y;
+    }
+    if(y < 1) {
+      for(y = 1; y<max_y+1; y++) {
+        theMatrix.setPixelColor(g2p(i+1,y), Color(0,0,0));
+      }
+    }
+    else {
+      int y_orig = y;
+      for(y; y>0; y--) {
+        theMatrix.setPixelColor(g2p(i+1,y), color);
+      }
+      y = y_orig+1;
+      for(y; y<max_y+1; y++) {
+        theMatrix.setPixelColor(g2p(i+1,y), Color(0,0,0));
+      }
+    }
+  }
+}
+
+void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  unsigned char theChar;
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while(strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+        case 'c':
+           theChar = value[0];
+           break;
+      }
+    }
+  }
+  theMatrix.print(theChar);
+  defaultPattern = 0;
+  theMatrix.show();
+  printOk(server);
+}
+
+void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  defaultPattern = 0;
+  theMatrix.show();
+  printOk(server);
+}
+void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  String inputData;
+  
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+        case 'v':
+        for(int i = 0; i<16; i++) {
+          inputData += String(value[i] - '0');
+        }
+        break;
+      }
+    }
+  }
+  vu(inputData);
+  theMatrix.show();
+  defaultPattern = 0;
+  printOk(server);
+}
+
+void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int id;
+  int gid;
+  int x;
+  int y;
+  int r;
+  int g;
+  int b;
+  int s = 1;
+  uint32_t c;
+  int use_hex = 0;
+  int use_id = 0;
+  int use_gid = 0;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'i':
+        gid = atoi(value);
+        use_gid = 1;
+        break;
+      case 'n':
+        id = atoi(value);
+        use_id = 1;
+        break;
+      case 'x':
+        x = atoi(value);
+        break;
+      case 'y':
+        y = atoi(value);
+        break;
+      case 'h':
+        c = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 's':
+        s = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (use_id == 0) {
+    if (use_gid != 0) {
+      id = grid[gid];
+    } 
+    else {
+      id = g2p(x,y);
+    }
+  }
+
+  if (use_hex == 0) {
+    c = Color(r,g,b);
+  }
+
+  theMatrix.setPixelColor(id, c);
+
+  if (s) {
+    theMatrix.show();
+  }
+
+  defaultPattern = 0;
+  printOk(server);
+}
+#else
 // set all pixels to a "Color" value
 void colorAll(uint32_t c) {
   for (int i=0; i < strip.numPixels(); i++) {
@@ -223,7 +490,6 @@ void colorAllDef(uint32_t c) {
   }
   strip.show();
 }
-
 // set all pixels to a "Color" value, one at a time, with a delay
 void colorWipe(uint32_t c, uint8_t wait) {
   for (int i=0; i < strip.numPixels(); i++) {
@@ -233,42 +499,7 @@ void colorWipe(uint32_t c, uint8_t wait) {
     delay(wait);
   }
 }
-
-// fade from one color to another: UNFINISHED
-void fade(uint32_t c1, uint32_t c2, int wait) {
-  if (c1 < c2) {
-    while (c1 < c2) {
-      colorAll(c1++);
-      delay(wait);
-    }
-  } 
-  else {
-    while (c1 > c2) {
-      colorAll(c1--);
-      delay(wait);
-    }
-  }
-}
-
-// this takes x/y coordinates and maps it to a pixel offset
-// your grid will need to be updated to match your pixel count and layout
-int g2p(int x, int y) {
-  if(x%2) { // if odd
-    return (max_y * x) + y-1-max_y;
-  }
-  else { //else true, so
-  return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
-  }
-}
-
-// flash color "c" for "wait" ms
-void alert(uint32_t c, int wait) {
-  colorAll(c);
-  delay(wait);
-  colorAll(Color(0,0,0));
-}
-
- // show the grid to verify
+// show the grid to verify
 void gridTest(int wait) {
   int x;
   int y;
@@ -290,19 +521,6 @@ void gridTest(int wait) {
     }
   }
 }
-
-// wipe the major colors through all pixels
-void lightTest(int wait) {
-  colorWipe(Color(255, 0, 0), wait);
-  colorWipe(Color(0, 255, 0), wait);
-  colorWipe(Color(0, 0, 255), wait);
-  colorWipe(Color(255, 255, 255), wait);
-  colorWipe(Color(0, 0, 0), wait);
-}
-
-// next are the patterns, meant to loop
-// use caution here, these block the server listening
-
 // random pixel, random color
 // short pattern, very responsive
 void p_random (int wait) {
@@ -358,7 +576,7 @@ void p_cylon(uint32_t c[6]) {
   }
 
 }
-
+//visualizer, takes string of 16 numbers which are Y heights
 void vu(String input) {
   uint32_t color = Color(255,0,0);
   for(int i = 0; i<16; i++) {
@@ -384,174 +602,165 @@ void vu(String input) {
   }
 }
 
- //adafruit_gfx addons
-void stripwrite(uint8_t c) {
-  if (c == '\n') {
-    cursor_y += textsize*8;
-    cursor_x = 0;
-  }
-  else if (c == '\r') {
-    //skip
-  }
-  else {
-    drawChar(cursor_x, cursor_y, c, textcolor, textbgcolor, textsize);
-    cursor_x += textsize*6;
-    if(wrap && (cursor_x > (_width - textsize*6))) {
-      cursor_y += textsize*8;
-      cursor_x = 0;
-    }
-  }
+void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  defaultPattern = 0;
+  strip.show();
+  printOk(server);
 }
-
-void drawFastVLine(int16_t x, int16_t y,
-				 int16_t h, uint16_t color) {
-  // Update in subclasses if desired!
-  drawLine(x, y, x, y+h-1, color);
-}
-
-void drawPixel(int16_t x, int16_t y, uint32_t color)
-{
-  y = y + ((max_y - 1)*-1) + 2 * (max_y - y); //invert the Y axis
-  strip.setPixelColor(g2p(x,y), color);
-}
-
-void drawLine(int16_t x0, int16_t y0,
-			    int16_t x1, int16_t y1,
-			    uint16_t color) {
-  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
-  if (steep) {
-    swap(x0, y0);
-    swap(x1, y1);
-  }
-
-  if (x0 > x1) {
-    swap(x0, x1);
-    swap(y0, y1);
-  }
-
-  int16_t dx, dy;
-  dx = x1 - x0;
-  dy = abs(y1 - y0);
-
-  int16_t err = dx / 2;
-  int16_t ystep;
-
-  if (y0 < y1) {
-    ystep = 1;
-  } else {
-    ystep = -1;
-  }
-
-  for (; x0<=x1; x0++) {
-    if (steep) {
-      drawPixel(y0, x0, color);
-    } else {
-      drawPixel(x0, y0, color);
-    }
-    err -= dy;
-    if (err < 0) {
-      y0 += ystep;
-      err += dx;
-    }
-  }
-}
-
-
-void fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
-			    uint16_t color) {
-  // Update in subclasses if desired!
-  for (int16_t i=x; i<x+w; i++) {
-    drawFastVLine(i, y, h, color);
-  }
-}
-
-void drawChar(int16_t x, int16_t y, unsigned char c,
-			    uint32_t color, uint32_t bg, uint8_t size) {
-
-  if((x >= _width)            || // Clip right
-     (y >= _height)           || // Clip bottom
-     ((x + 6 * size - 1) < 0) || // Clip left
-     ((y + 8 * size - 1) < 0))   // Clip top
-    return;
-
-  for (int8_t i=0; i<6; i++ ) {
-    uint8_t line;
-    if (i == 5) 
-      line = 0x0;
-    else 
-      line = pgm_read_byte(font+(c*5)+i);
-    for (int8_t j = 0; j<8; j++) {
-      if (line & 0x1) {
-        if (size == 1) {// default size
-          if(x+i > max_x) { //it's wider than the table
-            if(tableTwo) {
-              if(client.connect(tableTwoIP, 7080)) {
-                client.print(F("GET /pixel?x="));
-                client.print(x+i-(max_x));
-                client.print(F("&y="));
-                client.print(y+j);
-                client.print(F("&h="));
-                client.println(color);
-                client.print(F("Host: "));
-                client.println(tableTwoIPStr);
-                client.println(F("Connection: close"));
-                client.println(F(""));
-                client.stop();
-              }
-            }
-          }
-          else {
-            drawPixel(x+i, y+j, color);
-          }
+void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  String inputData;
+  
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+        case 'v':
+        for(int i = 0; i<16; i++) {
+          inputData += String(value[i] - '0');
         }
-        else {  // big size
-          fillRect(x+(i*size), y+(j*size), size, size, color);
-        } 
-      } else if (bg != color) {
-        if (size == 1) { // default size
-        if(x+i > max_x) { //it's wider than the table
-            if(tableTwo) {
-              if(client.connect(tableTwoIP, 7080)) {
-                client.print(F("GET /pixel?x="));
-                client.print(x+i-(max_x));
-                client.print(F("&y="));
-                client.print(y+j);
-                client.print(F("&h="));
-                client.println(bg);
-                client.print(F("Host: "));
-                client.println(tableTwoIPStr);
-                client.println(F("Connection: close"));
-                client.println(F(""));
-                client.stop();
-              }
-            }
-          }
-          else {
-            drawPixel(x+i, y+j, bg);
-          }
-        }
-        else {  // big size
-          fillRect(x+i*size, y+j*size, size, size, bg);
-        }
+        break;
       }
-      line >>= 1;
+    }
+  }
+  vu(inputData);
+  strip.show();
+  defaultPattern = 0;
+  printOk(server);
+}
+
+void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int id;
+  int gid;
+  int x;
+  int y;
+  int r;
+  int g;
+  int b;
+  int s = 1;
+  uint32_t c;
+  int use_hex = 0;
+  int use_id = 0;
+  int use_gid = 0;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'i':
+        gid = atoi(value);
+        use_gid = 1;
+        break;
+      case 'n':
+        id = atoi(value);
+        use_id = 1;
+        break;
+      case 'x':
+        x = atoi(value);
+        break;
+      case 'y':
+        y = atoi(value);
+        break;
+      case 'h':
+        c = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 's':
+        s = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (use_id == 0) {
+    if (use_gid != 0) {
+      id = grid[gid];
+    } 
+    else {
+      id = g2p(x,y);
+    }
+  }
+
+  if (use_hex == 0) {
+    c = Color(r,g,b);
+  }
+
+  strip.setPixelColor(id, c);
+
+  if (s) {
+    strip.show();
+  }
+
+  defaultPattern = 0;
+  printOk(server);
+}
+#endif
+
+
+// fade from one color to another: UNFINISHED
+void fade(uint32_t c1, uint32_t c2, int wait) {
+  if (c1 < c2) {
+    while (c1 < c2) {
+      colorAll(c1++);
+      delay(wait);
+    }
+  } 
+  else {
+    while (c1 > c2) {
+      colorAll(c1--);
+      delay(wait);
     }
   }
 }
 
-
-void setCursor(int16_t x, int16_t y) { //set text upper left point
-  cursor_x = x;
-  cursor_y = y;
+// this takes x/y coordinates and maps it to a pixel offset
+// your grid will need to be updated to match your pixel count and layout
+int g2p(int x, int y) {
+  if(x%2) { // if odd
+    return (max_y * x) + y-1-max_y;
+  }
+  else { //else true, so
+  return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
+  }
 }
 
+// flash color "c" for "wait" ms
+void alert(uint32_t c, int wait) {
+  colorAll(c);
+  delay(wait);
+  colorAll(Color(0,0,0));
+}
+
+
+
+// wipe the major colors through all pixels
+void lightTest(int wait) {
+  colorWipe(Color(255, 0, 0), wait);
+  colorWipe(Color(0, 255, 0), wait);
+  colorWipe(Color(0, 0, 255), wait);
+  colorWipe(Color(255, 255, 255), wait);
+  colorWipe(Color(0, 0, 0), wait);
+}
 
 void cmd_index(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   printOk(server);
 }
 
-void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
-{
+void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   server.httpFail();
 }
 
@@ -559,30 +768,6 @@ void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, 
   colorAll(Color(0,0,0));
   cursor_x = cursor_x_orig;
   cursor_y = cursor_y_orig;
-  printOk(server);
-}
-
-void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  unsigned char theChar;
-  
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  
-  while(strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-        case 'c':
-           theChar = value[0];
-           break;
-      }
-    }
-  }
-  
-  stripwrite(theChar);
-  defaultPattern = 0;
-  strip.show();
   printOk(server);
 }
 
@@ -733,12 +918,6 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
   printOk(server);
 }
 
-void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  defaultPattern = 0;
-  strip.show();
-  printOk(server);
-}
-
 void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   URLPARAM_RESULT rc;
   char name[NAMELEN];
@@ -771,108 +950,6 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   printOk(server);
 }
 
-void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  String inputData;
-  
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-        case 'v':
-        for(int i = 0; i<16; i++) {
-          inputData += String(value[i] - '0');
-        }
-        break;
-      }
-    }
-  }
-  vu(inputData);
-  strip.show();
-  defaultPattern = 0;
-  printOk(server);
-}
-
-void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int id;
-  int gid;
-  int x;
-  int y;
-  int r;
-  int g;
-  int b;
-  int s = 1;
-  uint32_t c;
-  int use_hex = 0;
-  int use_id = 0;
-  int use_gid = 0;
-
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-      case 'i':
-        gid = atoi(value);
-        use_gid = 1;
-        break;
-      case 'n':
-        id = atoi(value);
-        use_id = 1;
-        break;
-      case 'x':
-        x = atoi(value);
-        break;
-      case 'y':
-        y = atoi(value);
-        break;
-      case 'h':
-        c = hexColor(value);
-        use_hex = 1;
-        break;
-      case 'r':
-        r = atoi(value);
-        break;
-      case 'g':
-        g = atoi(value);
-        break;
-      case 'b':
-        b = atoi(value);
-        break;
-      case 's':
-        s = atoi(value);
-        break;
-      }
-    }
-  }
-
-  if (use_id == 0) {
-    if (use_gid != 0) {
-      id = grid[gid];
-    } 
-    else {
-      id = g2p(x,y);
-    }
-  }
-
-  if (use_hex == 0) {
-    c = Color(r,g,b);
-  }
-
-  strip.setPixelColor(id, c);
-
-  if (s) {
-    strip.show();
-  }
-
-  defaultPattern = 0;
-  printOk(server);
-}
-
 // begin standard arduino setup and loop pattern
 
 void setup() {
@@ -897,8 +974,12 @@ void setup() {
   webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
   Udp.begin(localPort);
-
+  
+  #if defined (ISMATRIX)
+  theMatrix.begin();
+  #else
   strip.begin();
+  #endif
 
   // light blip of light to signal we are ready to listen
   colorAll(Color(0,0,11));
@@ -917,7 +998,11 @@ void loop()
   if(packetSize) {
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     vu(packetBuffer);
+    #if defined (ISMATRIX)
+    theMatrix.show();
+    #else
     strip.show();
+    #endif
   }
 
   // run the default pattern
