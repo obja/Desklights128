@@ -114,6 +114,23 @@ int grid[STRIPLEN] = {
  	4,5,14,15,24,25,34,35
  };
  */
+    uint32_t red[6] = { //red
+    Color(255,0,0),
+    Color(200,0,0),
+    Color(150,0,0),
+    Color(100,0,0),
+    Color(50,0,0),
+    Color(0,0,0),
+  };
+  uint32_t blue[6] = { //blue
+    Color(0,0,255),
+    Color(0,0,200),
+    Color(0,0,150),
+    Color(0,0,100),
+    Color(0,0,50),
+    Color(0,0,0),
+  };
+
 
 /*** Things you might want to change ***/
 
@@ -310,18 +327,9 @@ void p_rainbow() {
 }
 
 // cylon or K.I.T.T. whichever 
-void p_cylon() {
+void p_cylon(uint32_t c[6]) {
   int x;
   int wait=75;
-
-  uint32_t c[6] = {
-    Color(255,0,0),
-    Color(200,0,0),
-    Color(150,0,0),
-    Color(100,0,0),
-    Color(50,0,0),
-    Color(0,0,0),
-  };
 
   for (x=0; x <= max_x; x++) {
     int mod = 0;
@@ -921,7 +929,10 @@ void loop()
     p_random(50);
     break;
   case 3:
-    p_cylon();
+    p_cylon(blue);
+    break;
+  case 5:
+    p_cylon(red);
     break;
   case 4:
     colorAll(Color(0,0,0));
