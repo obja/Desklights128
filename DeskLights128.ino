@@ -42,7 +42,8 @@
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 10
 
-#define ISMATRIX
+//#define ISMATRIX
+//#define NEOPIXEL
 
 //commands count should fix the error where newly added commands don't work
 #include "SPI.h"
@@ -51,11 +52,18 @@
 #include "EthernetUdp.h"
 #include "EthernetBonjour.h"
 #include "WebServer.h"
-#include <Adafruit_WS2801.h>
 #include "Adafruit_GFX.h"
 #include "glcdfont.c"
-#if defined (ISMATRIX)
+#if defined (ISMATRIX) && defined (NEOPIXEL)
+//#include <Adafruit_NeoMatrix.h>
+//#include <Adafruit_NeoPixel.h>
+#elif defined (ISMATRIX)
 #include <Adafruit_2801Matrix.h>
+#include <Adafruit_WS2801.h>
+#elif defined (NEOPIXEL)
+#include <Adafruit_NeoPixel.h>
+#else
+#include <Adafruit_WS2801.h>
 #endif
 
 /*** This is what you will almost certainly have to change ***/
@@ -76,6 +84,7 @@ unsigned int localPort = 8888;
 // LED Stuff
 uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 3; // Green wire on Adafruit Pixels
+uint8_t neoPin = 6;
 
 //LED Grid Stuff
 uint16_t max_x = 16;
@@ -83,13 +92,15 @@ uint16_t max_y = 8;
 
 #define STRIPLEN 128
 int defaultPattern = 0;
-#if defined (ISMATRIX)
+#if defined (ISMATRIX)  && defined(NEOPIXEL)
+#elif defined (ISMATRIX)
 Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,
 NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
 WS2801_RGB);
-#else
-Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_RGB); // setting max_x and max_y here lets us use draw functions
+#elif defined (NEOPIXEL)
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(max_x * max_y, neoPin, NEO_GRB + NEO_KHZ800);
 #endif
+Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_RGB); // setting max_x and max_y here lets us use draw functions
 
 //ada gfx vars
 int16_t cursor_x_orig = 1;
@@ -222,6 +233,7 @@ uint32_t Wheel(byte WheelPos) {
 #if defined (ISMATRIX)
 // set all pixels to a "Color" value
 void colorAll(uint32_t c) {
+  Serial.println("Matrix");
   for (int i=0; i < theMatrix.numPixels(); i++) {
     theMatrix.setPixelColor(i, c);
   }
@@ -477,6 +489,7 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
 #else
 // set all pixels to a "Color" value
 void colorAll(uint32_t c) {
+  Serial.println("Not Matrix");
   for (int i=0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, c);
   }
@@ -953,6 +966,7 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
+  delay(5000);
   Serial.begin(9600);
 
   //TODO: I think I've run out of memory, consolidate "tests"
@@ -970,16 +984,11 @@ void setup() {
   webserver.addCommand("pixel", &cmd_pixel);
   webserver.addCommand("default", &cmd_default);
   webserver.addCommand("test", &cmd_test);
-  webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
   Udp.begin(localPort);
   
-  #if defined (ISMATRIX)
-  theMatrix.begin();
-  #else
   strip.begin();
-  #endif
 
   // light blip of light to signal we are ready to listen
   colorAll(Color(0,0,11));
@@ -989,7 +998,7 @@ void setup() {
 
 void loop()
 {
-  //EthernetBonjour.run();
+  EthernetBonjour.run();
   // listen for connections
   char buff[64];
   int len = 64;
@@ -1004,7 +1013,7 @@ void loop()
     strip.show();
     #endif
   }
-
+//p_cylon(blue);
   // run the default pattern
   switch(defaultPattern) {
   case 1:
