@@ -1,5 +1,5 @@
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
-#define WEBDUINO_COMMANDS_COUNT 10
+#define WEBDUINO_COMMANDS_COUNT 20
 
 #include "SPI.h"
 #include "avr/pgmspace.h"
@@ -54,6 +54,251 @@ uint32_t textbgcolor = Color(0,0,0);
 boolean wrap = false;
 int16_t _width = max_x;
 int16_t _height = max_y;
+
+/* SNAKE SETUP */
+
+int snakeButton = 0;
+
+int hrow=0,hcol=0;//sets the row and col of the snake head
+bool game = true;//game is good
+bool start = false;//start the game with true
+bool ignoreNextTimer=false;//tells the game timer weither or not it should run
+//When true the game timer will not update due to the update by a keypress
+int sx=8,sy=4;//set snake location
+long previousMillis = 0;//used for the game timer
+long interval = 500; //how long between each update of the game
+unsigned long currentMillis = 0;//used for the game timer
+
+int sDr=1,sDc=0;//used to keep last direction, start off going up
+
+//int array[Y * X];
+uint16_t SetElement(uint16_t, uint16_t);//2D array into a number
+
+#define X 16//this is the depth of the field
+#define Y 8//this is the length of the field
+
+int gameBoard[X][Y] = //game field, 0 is empty, -1 is food, >0 is snake
+{
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0}
+};
+
+void checkKeyboard() {
+    if (snakeButton == 1) {
+      Serial.println("[Left]");
+      if (game&&start) {
+        moveSnake(-1,0);
+	ignoreNextTimer=true;
+      }
+    }
+    else if (snakeButton == 2) { 
+      Serial.println("[Right]");
+      if (game&&start) {
+        moveSnake(1,0);
+	ignoreNextTimer=true;
+      }
+    }
+    else if (snakeButton == 3) {
+      Serial.println("[Up]");
+      if (game&&start) {
+        moveSnake(0,1);
+	ignoreNextTimer=true;
+      }
+    }
+    else if (snakeButton == 4) {
+      Serial.println("[Down]");
+      if (game&&start) {
+        moveSnake(0,-1);
+	ignoreNextTimer=true;
+      }
+    }
+    else if (snakeButton == 5) {
+      resetGame();
+    }
+    else if (snakeButton == 6) {
+      start = true;
+      drawBoard();
+    }
+    snakeButton = 0;
+}
+
+void updateGame() {
+  if (game && start) {
+    moveSnake(sDr,sDc);
+  }
+  if (game && start) {
+    drawBoard();
+  }
+}
+
+void resetGame() {
+  resetBoard();
+  sDr=1; //move up
+  sDc=0;
+  loadSnake();
+  placeFood();
+  findSnakeHead();//find where the snake is starting from
+  game=true;
+  start=false;
+  ignoreNextTimer=false;
+  drawBoard();
+}
+
+void placeFood() {
+  int rx=0,ry=0;
+  rx = random(0,X-1);
+  ry = random(0,Y-1);
+  if (gameBoard[rx][ry]>0) {
+    while(gameBoard[rx][ry]>0) {
+      rx = random(0,X-1);
+      ry = random(0,Y-1);
+      if (gameBoard[rx][ry]==0) {
+        gameBoard[rx][ry]=-1;
+	break;
+      }
+    }
+  }
+  else {
+    gameBoard[rx][ry]=-1;
+  }
+}
+
+void loadSnake() {
+  gameBoard[sx][sy]=1;
+}
+
+void resetBoard() {
+  for(int x=0;x<X;x++) {
+    for(int y =0;y<Y;y++) {
+      gameBoard[x][y]=0;
+    }
+  }
+  loadSnake();
+}
+
+void gameOver() {
+  game = false;
+  start = false;
+  for(int light=0;light<255;light++) {
+    for(int i =0;i< theMatrix.numPixels();i++) {
+      theMatrix.setPixelColor(i,Color(light,0,0));
+    }
+    theMatrix.show();
+    delay(15);
+  }
+  theMatrix.show();
+}
+
+void moveSnake(int row, int col) {
+  Serial.print("r: ");
+  Serial.print(row);
+  Serial.print(", c:");
+  Serial.println(col);
+  sDr = row;
+  sDc = col;
+  Serial.print(sDr);
+  Serial.print(",");
+  Serial.println(sDc);
+  int new_r=0,new_c=0;
+  new_r=hrow+row;
+  new_c=hcol+col;
+  Serial.print(new_r);
+  Serial.print(", ");
+  Serial.println(new_c);
+  if (new_r>=X||new_r<0||new_c>=Y||new_c<0) {
+    gameOver();
+  }
+  else if(gameBoard[new_r][new_c]>0) {
+    gameOver();
+  }
+  else if (gameBoard[new_r][new_c]==-1) {
+    gameBoard[new_r][new_c] = 1+gameBoard[hrow][hcol];
+    hrow=new_r;
+    hcol=new_c;
+    placeFood();
+    drawBoard();
+  }
+  else {
+    gameBoard[new_r][new_c] = 1+gameBoard[hrow][hcol];
+    hrow=new_r;
+    hcol=new_c;
+    removeTail();
+    drawBoard();
+  }
+}
+
+void removeTail() {
+  for (int x=0;x<X;x++) {
+    for (int y=0;y<Y;y++) {
+      if(gameBoard[x][y]>0) {
+        gameBoard[x][y]--;
+      }
+    }
+  }
+}
+
+void drawBoard() {
+  clear_dsp();
+  for (int x=0;x<X;x++) {
+    for (int y=0;y<Y;y++) {
+      if(gameBoard[x][y]==-1) {//food
+        theMatrix.setPixelColor(g2p(x+1,y+1),Color(0,255,0)); //green, food
+      }
+      else if(gameBoard[x][y]==0) { //empty
+        theMatrix.setPixelColor(g2p(x+1,y+1),Color(0,0,0)); //off
+      }
+      else {
+        theMatrix.setPixelColor(g2p(x+1,y+1),Color(0,0,255)); //blue, snake
+      }
+    }
+  }
+  theMatrix.show();
+}
+
+void findSnakeHead() {
+  hrow=0;//clearing out old location
+  hcol=0;//clearing out old location
+  for (int x=0;x<X;x++) {
+    for (int y=0;y<Y;y++) {
+      if (gameBoard[x][y]>gameBoard[hrow][hcol]) {
+        hrow=x;
+	hcol=y;
+      }
+    }
+  }
+}
+
+
+void clear_dsp() {
+  for(int i =0;i< theMatrix.numPixels();i++) {
+    theMatrix.setPixelColor(i,Color(0,0,0));
+  }
+  theMatrix.show();
+}
+
+uint16_t SetElement(uint16_t row, uint16_t col)
+{
+	//array[width * row + col] = value;
+	return Y * row+col;
+}
+
+
+
+/* END SNAKE SETUP */
 
 // 'graph' style x,y where 0,0 is bottom left
 
@@ -633,6 +878,23 @@ void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_ta
   printOk(server);
 }
 
+void cmd_snakemove(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      if (name[0] == 'i') {
+        snakeButton = atoi(value);
+        Serial.println(snakeButton);
+      }
+    }
+  }
+
+  printOk(server);
+}
+
 void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int r;
   int g;
@@ -734,8 +996,16 @@ void setup() {
   webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("test", &cmd_test);
   webserver.addCommand("vu", &cmd_vu);
+  webserver.addCommand("snake", &cmd_snakemove);
   webserver.begin();
   Udp.begin(localPort);
+  
+  /* SNAKE SETUP */
+  hrow=sx;//set the row of the snake head
+  hcol=sy;//set the col of the snake head
+  randomSeed(analogRead(28));//used to help make a better random number
+  resetGame();//clear and set the game
+  /* END SNAKE SETUP */
   
   theMatrix.begin();
   theMatrix.setCursor(1,1);
@@ -814,6 +1084,18 @@ void loop()
     p_cylon(green);
     p_cylon(blue);
     p_cylon(purple);
+    break;
+  case 9:
+    currentMillis = millis();
+    if(currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      if (game&&start&&ignoreNextTimer==false) {
+        drawBoard();
+	updateGame();
+      }
+      ignoreNextTimer=false;//resets the ignore bool
+    }
+    checkKeyboard();
     break;
   }
 }
