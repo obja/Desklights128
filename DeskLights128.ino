@@ -1,51 +1,6 @@
-/*
-
- ### Parameter Explanation
- All exposed function calls take 0 or more single letter parameters:
- r: red value (0 - 255)
- g: green value (0 - 255)
- b: blue value (0 - 255)
- h: hex string representing color (000000 - ffffff)
- x: x coordinate
- y: y coordinate
- d: delay in milliseconds
- i: grid id of pattern/pixel (grid 0,0 = 0; grid 1,0 = 1, etc)
- n: number of pixel on strip, starts at 0
- s: call show() command automatically (0 or 1, defaults to 1)
- 
- Note: All color parameters can be specified as either RGB or hex
- 
- ### Public Functions
- off : Turn off all pixels
- show : show any set, but not yet shown pixels
- color: set all pixels to color; takes color
- wipe: like color, but down the strip; optional delay
- alert: flash all pixels; takes color and optional delay
- pixel: set pixel to color; takes id or number, color, and optional show
- default: set default pattern to loop, takes pattern id
- gridtest: show grid pixel by pixel, no params
- lighttest: show rgb on all pixels, no params
- 
- ### Example
- 
- Here's an example using alert...
- 
- Flash bright white for default length of time 
- http://server/alert?r=255&g=255&b=255
- or
- http://server/alert?h=ffffff
- or with a 1 second duration
- http://server/alert?h=ffffff&d=1000
- 
- */
-
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 10
 
-//#define ISMATRIX
-//#define NEOPIXEL
-
-//commands count should fix the error where newly added commands don't work
 #include "SPI.h"
 #include "avr/pgmspace.h"
 #include "Ethernet.h"
@@ -54,17 +9,8 @@
 #include "WebServer.h"
 #include "Adafruit_GFX.h"
 #include "glcdfont.c"
-#if defined (ISMATRIX) && defined (NEOPIXEL)
-//#include <Adafruit_NeoMatrix.h>
-//#include <Adafruit_NeoPixel.h>
-#elif defined (ISMATRIX)
 #include <Adafruit_2801Matrix.h>
 #include <Adafruit_WS2801.h>
-#elif defined (NEOPIXEL)
-#include <Adafruit_NeoPixel.h>
-#else
-#include <Adafruit_WS2801.h>
-#endif
 
 /*** This is what you will almost certainly have to change ***/
 
@@ -72,11 +18,6 @@
 static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to match your arduino/shield
 static uint8_t ip[] = {   192,168,0,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
-//secondary tables web client
-boolean tableTwo = true; //set to false to disable tableTwo
-EthernetClient client;
-IPAddress tableTwoIP(192,168,0,221); //this is the second table
-String tableTwoIPStr = (String)tableTwoIP[0] +  "." + (String)tableTwoIP[1] + "." + (String)tableTwoIP[2] + "." + (String)tableTwoIP[3];
 //UDP stuff
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP Udp;
@@ -84,7 +25,7 @@ unsigned int localPort = 8888;
 // LED Stuff
 uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 3; // Green wire on Adafruit Pixels
-uint8_t neoPin = 6;
+
 
 //LED Grid Stuff
 uint16_t max_x = 16;
@@ -92,15 +33,15 @@ uint16_t max_y = 8;
 
 #define STRIPLEN 128
 int defaultPattern = 0;
-#if defined (ISMATRIX)  && defined(NEOPIXEL)
-#elif defined (ISMATRIX)
-Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,
-NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
-WS2801_RGB);
-#elif defined (NEOPIXEL)
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(max_x * max_y, neoPin, NEO_GRB + NEO_KHZ800);
-#endif
-Adafruit_WS2801 strip = Adafruit_WS2801(max_x, max_y, dataPin, clockPin, WS2801_RGB); // setting max_x and max_y here lets us use draw functions
+Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,WS2801_RGB);
+
+
+//Matrix Scrolling
+unsigned long prevFrameTime = 0L;             // For animation timing
+#define FPS 10                                // Scrolling speed
+uint8_t       msgLen        = 0;              // Empty message
+int           msgX          = 16; // Start off right edge
+String writeCharStr = "";
 
 //ada gfx vars
 int16_t cursor_x_orig = 1;
@@ -127,32 +68,63 @@ int grid[STRIPLEN] = {
 0,15,16,31,32,47,48,63,64,79,80,95,96,111,112,127
 };
 
-// 'screen' style x,y where 0,0 is top left
-/* int grid[STRIPLEN] = {
- 	0,9,10,19,20,29,30,39,
- 	1,8,11,18,21,28,31,38,
- 	2,7,12,17,22,27,32,37,
- 	3,6,13,16,23,26,33,36,
- 	4,5,14,15,24,25,34,35
- };
- */
-    uint32_t red[6] = { //red
-    Color(255,0,0),
-    Color(200,0,0),
-    Color(150,0,0),
-    Color(100,0,0),
-    Color(50,0,0),
-    Color(0,0,0),
-  };
-  uint32_t blue[6] = { //blue
-    Color(0,0,255),
-    Color(0,0,200),
-    Color(0,0,150),
-    Color(0,0,100),
-    Color(0,0,50),
-    Color(0,0,0),
-  };
+//cylon colors
 
+uint32_t red[6] = { //red
+  Color(255,0,0),
+  Color(200,0,0),
+  Color(150,0,0),
+  Color(100,0,0),
+  Color(50,0,0),
+  Color(0,0,0),
+};
+
+uint32_t orange[6] = { //orange
+  Color(255,128,0),
+  Color(200,100,0),
+  Color(150,75,0),
+  Color(100,50,0),
+  Color(50,25,0),
+  Color(0,0,0),
+};
+
+uint32_t yellow[6] = { //yellow
+  Color(255,255,0),
+  Color(200,200,0),
+  Color(150,150,0),
+  Color(100,100,0),
+  Color(50,50,0),
+  Color(0,0,0),
+};
+
+uint32_t green[6] = { //green
+  Color(0,255,0),
+  Color(0,200,0),
+  Color(0,150,0),
+  Color(0,100,0),
+  Color(0,50,0),
+  Color(0,0,0),
+};
+
+uint32_t blue[6] = { //blue
+  Color(0,0,255),
+  Color(0,0,200),
+  Color(0,0,150),
+  Color(0,0,100),
+  Color(0,0,50),
+  Color(0,0,0),
+};
+
+uint32_t purple[6] = { //blue
+  Color(127,0,255),
+  Color(100,0,200),
+  Color(75,0,150),
+  Color(50,0,100),
+  Color(25,0,50),
+  Color(0,0,0),
+};
+
+//end cylon colors
 
 /*** Things you might want to change ***/
 
@@ -170,6 +142,7 @@ void printOk(WebServer &server) {
   server.print(F("<script> function process() { var url='write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>")); //script for form submitting
   server.print(F("<script> function process2() { var urlalert='alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>")); //script for alert submitting
   server.print(F("<script> function process3() { var urlalert='default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>")); //script for default submitting
+  server.print(F("<script> function colortable() { var url='color?h=' + document.getElementById('colortab').value; location.href=url; return false; } </script><script> function colorpixel() { var url='pixel?x=' + document.getElementById('pixx').value + '&y=' + document.getElementById('pixy').value + '&h=' + document.getElementById('pixcolor').value; location.href=url; return false; } </script><script> function colorwipe() { var url='wipe?h=' + document.getElementById('wipecolor').value + '&d=' + document.getElementById('wipedel').value; location.href=url; return false; } </script>"));
   server.println(F("<body>")); //links below here
   server.println(F("<form onSubmit='return process2();'>Send Alert <select id='alert'>")); //form select for Alerts
   server.println(F("<option value='FF0000'>Red</option>")); //red
@@ -179,10 +152,13 @@ void printOk(WebServer &server) {
   server.println(F("<option value='003333'>Blue</option>")); //blue
   server.println(F("<option value='660033'>Purple</option>")); //purple
   server.println(F("<input type='submit' value='go'> </select> </form>")); //end select
-  server.println(F("<form onSubmit='return process3();'>Run Command <select id='default'>")); //form select for Defaults
+  server.println(F("<form onSubmit='return colortable();'>Color Table: <select id='colortab'> <option value='FF0000'>Red</option><option value='FF6600'>Orange</option> <option value='FFFF00'>Yellow</option><option value='336600'>Green</option> <option value='003333'>Blue</option><option value='660033'>Purple</option><input type='submit' value='go'> </select> </form>"));
+  server.println(F("<form onSubmit='return colorpixel();'>Color Pixel: x=<input type='text' value='1' maxlength='3' size='3' name='pixx' id='pixx' type='number'> y=<input type='text' value='1' maxlength='3' size='3' name='pixy' id='pixy' type='number'><select id='pixcolor'> <option value='FF0000'>Red</option><option value='FF6600'>Orange</option> <option value='FFFF00'>Yellow</option><option value='336600'>Green</option> <option value='003333'>Blue</option><option value='660033'>Purple</option><input type='submit' value='go'> </select> </form>"));
+  server.println(F("<form onSubmit='return colorwipe();'>Color Wipe: delay=<input type='text' value='100' maxlength='6' size='6' name='wipedel' id='wipedel' type='number'><select id='wipecolor'> <option value='FF0000'>Red</option><option value='FF6600'>Orange</option> <option value='FFFF00'>Yellow</option><option value='336600'>Green</option> <option value='003333'>Blue</option><option value='660033'>Purple</option><input type='submit' value='go'> </select> </form>"));  server.println(F("<form onSubmit='return process3();'>Run Command <select id='default'>")); //form select for Defaults
   server.println(F("<option value='1'>Rainbow</option>")); //red
   server.println(F("<option value='2'>Random</option>")); //orange
   server.println(F("<option value='3'>K.I.T.T.</option>")); //yellow
+  server.println(F("<option value='8'>K.I.T.T. Multi</option>")); //yellow
   server.println(F("<input type='submit' value='go'> </select> </form>")); //end select
   server.println(F("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <input type='submit' value='go'> </form>")); //this writes a single character to the board
   server.print(F("<a href='default?id=4'>All Off</a><p></p>"));
@@ -230,7 +206,6 @@ uint32_t Wheel(byte WheelPos) {
   }
 }
 
-#if defined (ISMATRIX)
 // set all pixels to a "Color" value
 void colorAll(uint32_t c) {
   Serial.println("Matrix");
@@ -360,7 +335,8 @@ void vu(String input) {
 }
 
 void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  unsigned char theChar;
+  int theLength;
+  writeCharStr = "";
   URLPARAM_RESULT rc;
   char name[NAMELEN];
   char value[VALUELEN];
@@ -368,15 +344,20 @@ void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_
     rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
     if((rc != URLPARAM_EOS)) {
       switch(name[0]) {
+        case 'l':
+           theLength = atoi(value);
+           break;
         case 'c':
-           theChar = value[0];
+        for(int i = 0; i<theLength; i++) {
+          writeCharStr += (value[i]);
+          Serial.write((value[i]));Serial.println();
+        }
            break;
       }
     }
   }
-  theMatrix.print(theChar);
-  defaultPattern = 0;
-  theMatrix.show();
+  Serial.println(writeCharStr);
+  defaultPattern = 7;
   printOk(server);
 }
 
@@ -486,243 +467,6 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
   defaultPattern = 0;
   printOk(server);
 }
-#else
-// set all pixels to a "Color" value
-void colorAll(uint32_t c) {
-  Serial.println("Not Matrix");
-  for (int i=0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-  }
-  defaultPattern = 0;
-  strip.show();
-}
-//colorAllDef is just colorAll without the defaultPattern set
-void colorAllDef(uint32_t c) {
-  for (int i=0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-  }
-  strip.show();
-}
-// set all pixels to a "Color" value, one at a time, with a delay
-void colorWipe(uint32_t c, uint8_t wait) {
-  for (int i=0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-    defaultPattern = 0;
-    strip.show();
-    delay(wait);
-  }
-}
-// show the grid to verify
-void gridTest(int wait) {
-  int x;
-  int y;
-  uint32_t on = Color(255,255,255);
-  uint32_t off = Color(0,0,0);
-
-  if (!wait) {
-    wait = 250;
-  }
-
-  for ( x = 0; x <= max_x; x++) {
-    for ( y = 0; y <= max_y; y++) {
-      defaultPattern = 0;
-      strip.setPixelColor(g2p(x,y), on);
-      strip.show();
-      delay(wait);
-      strip.setPixelColor(g2p(x,y), off);
-      strip.show();
-    }
-  }
-}
-// random pixel, random color
-// short pattern, very responsive
-void p_random (int wait) {
-  strip.setPixelColor(
-  random(0, strip.numPixels()),
-  Color(random(0,255), random(0,255), random(0,255))
-    );
-  strip.show();
-  delay(wait);
-}
-
-// If you were at maker faire, you know this pattern
-// it takes about a second to run, so new requests will wait
-void p_rainbow() {
-  int i, j;
-  for (j=0; j < 256; j++) {
-    for (i=0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel( ((i * 256 / strip.numPixels()) + j) % 256) );
-    }
-    strip.show();
-  }
-}
-
-// cylon or K.I.T.T. whichever 
-void p_cylon(uint32_t c[6]) {
-  int x;
-  int wait=75;
-
-  for (x=0; x <= max_x; x++) {
-    int mod = 0;
-    while ((mod < 6) && (x - mod >= 0)) {
-      int y = 0;
-      while (y <= max_y) {
-        strip.setPixelColor(g2p(x-mod,y++), c[mod]);
-      }
-      mod++;
-    }
-    strip.show();
-    delay(wait);
-  }
-
-  for (x=max_x; x >= 0; x--) {
-    int mod = 0;
-    while ((mod < 6) && (x + mod <= max_x)) {
-      int y = 0;
-      while (y <= max_y) {
-        strip.setPixelColor(g2p(x+mod,y++), c[mod]);
-      }
-      mod++;
-    }
-    strip.show();
-    delay(wait);
-  }
-
-}
-//visualizer, takes string of 16 numbers which are Y heights
-void vu(String input) {
-  uint32_t color = Color(255,0,0);
-  for(int i = 0; i<16; i++) {
-    int y = input.charAt(i) - '0';
-    if(y > max_y) {
-      y = max_y;
-    }
-    if(y < 1) {
-      for(y = 1; y<max_y+1; y++) {
-        strip.setPixelColor(g2p(i+1,y), Color(0,0,0));
-      }
-    }
-    else {
-      int y_orig = y;
-      for(y; y>0; y--) {
-        strip.setPixelColor(g2p(i+1,y), color);
-      }
-      y = y_orig+1;
-      for(y; y<max_y+1; y++) {
-        strip.setPixelColor(g2p(i+1,y), Color(0,0,0));
-      }
-    }
-  }
-}
-
-void cmd_show(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  defaultPattern = 0;
-  strip.show();
-  printOk(server);
-}
-void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  String inputData;
-  
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-        case 'v':
-        for(int i = 0; i<16; i++) {
-          inputData += String(value[i] - '0');
-        }
-        break;
-      }
-    }
-  }
-  vu(inputData);
-  strip.show();
-  defaultPattern = 0;
-  printOk(server);
-}
-
-void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int id;
-  int gid;
-  int x;
-  int y;
-  int r;
-  int g;
-  int b;
-  int s = 1;
-  uint32_t c;
-  int use_hex = 0;
-  int use_id = 0;
-  int use_gid = 0;
-
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-      case 'i':
-        gid = atoi(value);
-        use_gid = 1;
-        break;
-      case 'n':
-        id = atoi(value);
-        use_id = 1;
-        break;
-      case 'x':
-        x = atoi(value);
-        break;
-      case 'y':
-        y = atoi(value);
-        break;
-      case 'h':
-        c = hexColor(value);
-        use_hex = 1;
-        break;
-      case 'r':
-        r = atoi(value);
-        break;
-      case 'g':
-        g = atoi(value);
-        break;
-      case 'b':
-        b = atoi(value);
-        break;
-      case 's':
-        s = atoi(value);
-        break;
-      }
-    }
-  }
-
-  if (use_id == 0) {
-    if (use_gid != 0) {
-      id = grid[gid];
-    } 
-    else {
-      id = g2p(x,y);
-    }
-  }
-
-  if (use_hex == 0) {
-    c = Color(r,g,b);
-  }
-
-  strip.setPixelColor(id, c);
-
-  if (s) {
-    strip.show();
-  }
-
-  defaultPattern = 0;
-  printOk(server);
-}
-#endif
-
 
 // fade from one color to another: UNFINISHED
 void fade(uint32_t c1, uint32_t c2, int wait) {
@@ -742,11 +486,16 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
 
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
-int g2p(int x, int y) {
+uint16_t g2p(uint16_t x, uint16_t y) {
+  //Serial.println("g2p");
+  //Serial.print("X: ");Serial.println(x);
+  //Serial.print("Y: ");Serial.println(y);
   if(x%2) { // if odd
-    return (max_y * x) + y-1-max_y;
+  //Serial.print("V: ");Serial.println((max_y * x) + y-1-max_y);
+  return (max_y * x) + y-1-max_y;
   }
   else { //else true, so
+  //Serial.print("V: ");Serial.println((max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y));
   return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
   }
 }
@@ -863,8 +612,8 @@ void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail,
     c = Color(r,g,b);
   }
 
-  colorWipe(c, delay);
   printOk(server);
+  colorWipe(c, delay);
 }
 
 void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -966,12 +715,11 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
-  delay(5000);
-  Serial.begin(9600);
-
-  //TODO: I think I've run out of memory, consolidate "tests"
   Ethernet.begin(mac,ip);
-  Serial.println(Ethernet.localIP());
+  digitalWrite(10, HIGH);
+  delay(1000);
+  digitalWrite(10, LOW);
+  delay(1000); //resetting should fix our issues with not connecting intiially
   EthernetBonjour.begin("DeskLights");
   EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
@@ -983,21 +731,30 @@ void setup() {
   webserver.addCommand("alert", &cmd_alert);
   webserver.addCommand("pixel", &cmd_pixel);
   webserver.addCommand("default", &cmd_default);
+  webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("test", &cmd_test);
   webserver.addCommand("vu", &cmd_vu);
   webserver.begin();
   Udp.begin(localPort);
   
-  strip.begin();
-
+  theMatrix.begin();
+  theMatrix.setCursor(1,1);
+  theMatrix.setTextWrap(false);
+  
+  theMatrix.setRemapFunction(g2p);
+  
   // light blip of light to signal we are ready to listen
   colorAll(Color(0,0,11));
   delay(500);
   colorAll(Color(0,0,0));
+  
+  Serial.begin(9600);
+  Serial.println(Ethernet.localIP());
 }
 
 void loop()
 {
+  unsigned long t = millis(); // Current elapsed time, milliseconds.
   EthernetBonjour.run();
   // listen for connections
   char buff[64];
@@ -1007,14 +764,9 @@ void loop()
   if(packetSize) {
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     vu(packetBuffer);
-    #if defined (ISMATRIX)
     theMatrix.show();
-    #else
-    strip.show();
-    #endif
   }
-//p_cylon(blue);
-  // run the default pattern
+  
   switch(defaultPattern) {
   case 1:
     p_rainbow();
@@ -1025,13 +777,43 @@ void loop()
   case 3:
     p_cylon(blue);
     break;
-  case 5:
-    p_cylon(red);
-    break;
   case 4:
     colorAll(Color(0,0,0));
     cursor_x = cursor_x_orig;
     cursor_y = cursor_y_orig;
+    break;
+  case 5:
+    p_cylon(red);
+    break;
+  case 6:
+    if((t - prevFrameTime) >= (1000L / FPS)) { // Handle scrolling
+      theMatrix.fillScreen(0);
+      theMatrix.setCursor(msgX, 0);
+      theMatrix.print(Ethernet.localIP());
+      msgLen = String(Ethernet.localIP()).length();
+      if(--msgX < (msgLen * -6)) msgX = 15; // We must repeat!
+      theMatrix.show();
+      prevFrameTime = t;
+    }
+    break;
+  case 7:
+    if((t - prevFrameTime) >= (1000L / FPS)) { // Handle scrolling
+      theMatrix.fillScreen(0);
+      theMatrix.setCursor(msgX, 0);
+      theMatrix.print(writeCharStr);
+      msgLen = String(writeCharStr).length();
+      if(--msgX < (msgLen * -6)) msgX = 15; // We must repeat!
+      theMatrix.show();
+      prevFrameTime = t;
+    }
+    break;
+  case 8:
+    p_cylon(red);
+    p_cylon(orange);
+    p_cylon(yellow);
+    p_cylon(green);
+    p_cylon(blue);
+    p_cylon(purple);
     break;
   }
 }
