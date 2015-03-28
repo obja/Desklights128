@@ -14,6 +14,9 @@
 
 /*** This is what you will almost certainly have to change ***/
 
+int zeroNetworkPin = 22;
+int twoNetworkPin = 23;
+
 // WEB stuff
 static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to match your arduino/shield
 static uint8_t ip[] = {   192,168,0,220 }; // update this to match your network
@@ -715,6 +718,22 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
+  pinMode(zeroNetworkPin, INPUT_PULLUP);
+  pinMode(twoNetworkPin, INPUT_PULLUP);
+  Serial.print("zeroNetwork : ");Serial.println(digitalRead(zeroNetworkPin));
+  Serial.print("twoNetwork : ");Serial.println(digitalRead(twoNetworkPin));
+  if(!digitalRead(zeroNetworkPin)) {
+    Serial.println("0");
+    ip[2] = 0;
+  }
+  else if(!digitalRead(twoNetworkPin)) {
+    Serial.println("2");
+    ip[2] = 2;
+  }
+  else {
+    Serial.println("1");
+    ip[2] = 1;
+  }
   Ethernet.begin(mac,ip);
   digitalWrite(10, HIGH);
   delay(1000);
