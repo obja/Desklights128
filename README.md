@@ -7,6 +7,7 @@
 `http://server/write?l=1&c=H`
 will draw an H
 `http://server/write?l=5&c=hello`
+will draw Hello
 2. Grid2Pixel function fixed for grid-style tables
 3. UDP server added for audio VU, with the command
 `http://server/vu?v=################`
