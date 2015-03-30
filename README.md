@@ -3,9 +3,10 @@
 
 ## Desklights128, a fork of DeskLights2 ( https://github.com/mnlagrasta/DeskLights2 )
 
-1. New function added to draw characters on the table
-`http://server/write?c=H`
+1. New function added to draw characters/strings on the table (needs parameter L before the string in C)
+`http://server/write?l=1&c=H`
 will draw an H
+`http://server/write?l=5&c=hello`
 2. Grid2Pixel function fixed for grid-style tables
 3. UDP server added for audio VU, with the command
 `http://server/vu?v=################`
@@ -20,14 +21,12 @@ would set
 
 4. The web page response has had commands added and correct HTML headers to work with Safari
 
-## Google Glass Application Source
-https://github.com/AlecH92/DeskLights128.glass
-
-## Android Application Source
-https://github.com/AlecH92/DeskLights128.phone
+## Android Application Source (Glass, Phone and Wear)
+https://github.com/AlecH92/DeskLights128.android
 
 ## Pebble Application Source
 https://github.com/AlecH92/DeskLights128.pebble
 
-## Winamp Connector Application Source (for use with the VU command)
-https://github.com/AlecH92/DeskLights128.winamp
+## Visualizer
+This works using the program Spectrum Lab and its feature of exporting FFT to a built in web server using JSON data.
+Source code: https://github.com/AlecH92/DeskLights128.visualizer
