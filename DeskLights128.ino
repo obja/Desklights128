@@ -1,39 +1,33 @@
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 20
+#define PIN 6
 
 #include "SPI.h"
 #include "avr/pgmspace.h"
 #include "Ethernet.h"
-#include "EthernetUdp.h"
-#include "EthernetBonjour.h"
 #include "WebServer.h"
-#include "Adafruit_GFX.h"
-#include "glcdfont.c"
-#include <Adafruit_2801Matrix.h>
-#include <Adafruit_WS2801.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_NeoMatrix.h>
+#include <Adafruit_NeoPixel.h>
 
 /*** This is what you will almost certainly have to change ***/
 
 // WEB stuff
 static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to match your arduino/shield
-static uint8_t ip[] = {   192,168,0,220 }; // update this to match your network
+static uint8_t ip[] = {   192,168,1,111 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
-//UDP stuff
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
-EthernetUDP Udp;
-unsigned int localPort = 8888;
-// LED Stuff
-uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
-uint8_t clockPin = 3; // Green wire on Adafruit Pixels
 
 
 //LED Grid Stuff
-uint16_t max_x = 16;
+uint16_t max_x = 30;
 uint16_t max_y = 8;
 
 #define STRIPLEN 128
 int defaultPattern = 0;
-Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,WS2801_RGB);
+Adafruit_NeoMatrix theMatrix = Adafruit_NeoMatrix(30, 8, PIN,
+  NEO_MATRIX_BOTTOM     + NEO_MATRIX_LEFT +
+  NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
+  NEO_RGB            + NEO_KHZ800);
 
 
 //Matrix Scrolling
@@ -42,18 +36,6 @@ unsigned long prevFrameTime = 0L;             // For animation timing
 uint8_t       msgLen        = 0;              // Empty message
 int           msgX          = 16; // Start off right edge
 String writeCharStr = "";
-
-//ada gfx vars
-int16_t cursor_x_orig = 1;
-int16_t cursor_y_orig = 1;
-int16_t cursor_x = cursor_x_orig;
-int16_t cursor_y = cursor_y_orig;
-uint8_t textsize = 1;
-uint32_t textcolor = Color(255,255,255);
-uint32_t textbgcolor = Color(0,0,0);
-boolean wrap = false;
-int16_t _width = max_x;
-int16_t _height = max_y;
 
 /* SNAKE SETUP */
 
@@ -74,11 +56,25 @@ int sDr=1,sDc=0;//used to keep last direction, start off going up
 //int array[Y * X];
 uint16_t SetElement(uint16_t, uint16_t);//2D array into a number
 
-#define X 16//this is the depth of the field
+#define X 30//this is the depth of the field
 #define Y 8//this is the length of the field
 
 int gameBoard[X][Y] = //game field, 0 is empty, -1 is food, >0 is snake
 {
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0},
 	{0,0,0,0,0,0,0,0},
 	{0,0,0,0,0,0,0,0},
 	{0,0,0,0,0,0,0,0},
@@ -204,21 +200,11 @@ void gameOver() {
 }
 
 void moveSnake(int row, int col) {
-  Serial.print("r: ");
-  Serial.print(row);
-  Serial.print(", c:");
-  Serial.println(col);
   sDr = row;
   sDc = col;
-  Serial.print(sDr);
-  Serial.print(",");
-  Serial.println(sDc);
   int new_r=0,new_c=0;
   new_r=hrow+row;
   new_c=hcol+col;
-  Serial.print(new_r);
-  Serial.print(", ");
-  Serial.println(new_c);
   if (new_r>=X||new_r<0||new_c>=Y||new_c<0) {
     gameOver();
   }
@@ -376,6 +362,9 @@ uint32_t purple[6] = { //blue
 WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
+void printNothing(WebServer &server) {
+  server.println("good");
+}
 void printOk(WebServer &server) {
   server.println(F("HTTP/1.1 200 OK"));
   server.println(F("Content-Type: text/html"));
@@ -580,7 +569,7 @@ void vu(String input) {
 }
 
 void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int theLength;
+  int theLength = 0;
   writeCharStr = "";
   URLPARAM_RESULT rc;
   char name[NAMELEN];
@@ -636,15 +625,15 @@ void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, b
 }
 
 void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int id;
-  int gid;
-  int x;
-  int y;
-  int r;
-  int g;
-  int b;
+  int id = -1;
+  int gid = 0;
+  int x = 0;
+  int y = 0;
+  int r = 0;
+  int g = 0;
+  int b = 0;
   int s = 1;
-  uint32_t c;
+  uint32_t c = theMatrix.Color(0,0,0);
   int use_hex = 0;
   int use_id = 0;
   int use_gid = 0;
@@ -731,17 +720,22 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
 
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
+/*
 uint16_t g2p(uint16_t x, uint16_t y) {
-  //Serial.println("g2p");
-  //Serial.print("X: ");Serial.println(x);
-  //Serial.print("Y: ");Serial.println(y);
   if(x%2) { // if odd
-  //Serial.print("V: ");Serial.println((max_y * x) + y-1-max_y);
   return (max_y * x) + y-1-max_y;
   }
   else { //else true, so
-  //Serial.print("V: ");Serial.println((max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y));
   return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
+  }
+}*/
+
+uint16_t g2p(uint16_t x, uint16_t y) { //this is for a row-major set, bottom left starting position
+  if(y%2) { // if odd
+  return (((y-1)*max_x)+x-1);
+  }
+  else { //else true, so
+  return (((y-1)*max_x)+x-1)+ ((max_x - 1)*-1) + 2 * (max_x - x);
   }
 }
 
@@ -773,16 +767,15 @@ void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tai
 
 void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   colorAll(Color(0,0,0));
-  cursor_x = cursor_x_orig;
-  cursor_y = cursor_y_orig;
+  theMatrix.setCursor(1, 1);
   printOk(server);
 }
 
 void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  uint32_t c;
+  int r = 0;
+  int g = 0;
+  int b = 0;
+  uint32_t c = theMatrix.Color(0,0,0);;
   int use_hex = 0;
 
   URLPARAM_RESULT rc;
@@ -818,11 +811,11 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
 }
 
 void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  int delay;
-  uint32_t c;
+  int r = 0;
+  int g = 0;
+  int b = 0;
+  int delay = 0;
+  uint32_t c = theMatrix.Color(0,0,0);;
   int use_hex = 0;
 
   URLPARAM_RESULT rc;
@@ -892,16 +885,16 @@ void cmd_snakemove(WebServer &server, WebServer::ConnectionType type, char *url_
     }
   }
 
-  printOk(server);
+  printNothing(server);
 }
 
 void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  int d;
+  int r = 0;
+  int g = 0;
+  int b = 0;
+  int d = 0;
   int use_hex = 0;
-  uint32_t c;
+  uint32_t c = theMatrix.Color(0,0,0);;
 
   URLPARAM_RESULT rc;
   char name[NAMELEN];
@@ -946,8 +939,8 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   URLPARAM_RESULT rc;
   char name[NAMELEN];
   char value[VALUELEN];
-  int id;
-  int d;
+  int id = -1;
+  int d = 0;
   while (strlen(url_tail)) {
     rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
     if ((rc != URLPARAM_EOS)) {
@@ -977,13 +970,20 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
-  Ethernet.begin(mac,ip);
+  theMatrix.setRotation(0);
+  Serial.begin(9600);
+  Serial1.begin(9600);
+  delay(3000);
+  Serial.println("start");
+  pinMode(23, OUTPUT);
+  digitalWrite(23, 675);
+  Ethernet.begin(mac, ip);
+  Serial.println(Ethernet.localIP());
   digitalWrite(10, HIGH);
   delay(1000);
   digitalWrite(10, LOW);
   delay(1000); //resetting should fix our issues with not connecting intiially
-  EthernetBonjour.begin("DeskLights");
-  EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
+  Serial.println(Ethernet.localIP());
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
@@ -998,7 +998,6 @@ void setup() {
   webserver.addCommand("vu", &cmd_vu);
   webserver.addCommand("snake", &cmd_snakemove);
   webserver.begin();
-  Udp.begin(localPort);
   
   /* SNAKE SETUP */
   hrow=sx;//set the row of the snake head
@@ -1025,17 +1024,10 @@ void setup() {
 void loop()
 {
   unsigned long t = millis(); // Current elapsed time, milliseconds.
-  EthernetBonjour.run();
   // listen for connections
   char buff[64];
   int len = 64;
   webserver.processConnection(buff, &len);
-  int packetSize = Udp.parsePacket();
-  if(packetSize) {
-    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
-    vu(packetBuffer);
-    theMatrix.show();
-  }
   
   switch(defaultPattern) {
   case 1:
@@ -1049,8 +1041,7 @@ void loop()
     break;
   case 4:
     colorAll(Color(0,0,0));
-    cursor_x = cursor_x_orig;
-    cursor_y = cursor_y_orig;
+    theMatrix.setCursor(1, 1);
     break;
   case 5:
     p_cylon(red);
@@ -1086,6 +1077,10 @@ void loop()
     p_cylon(purple);
     break;
   case 9:
+    if(Serial1.available() > 0) {
+       snakeButton = Serial1.read();
+       Serial.println(snakeButton);
+    }
     currentMillis = millis();
     if(currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
