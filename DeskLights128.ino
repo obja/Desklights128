@@ -967,6 +967,7 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
+  Serial1.begin(9600);
   Ethernet.begin(mac,ip);
   digitalWrite(10, HIGH);
   delay(1000);
