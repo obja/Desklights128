@@ -204,21 +204,11 @@ void gameOver() {
 }
 
 void moveSnake(int row, int col) {
-  Serial.print("r: ");
-  Serial.print(row);
-  Serial.print(", c:");
-  Serial.println(col);
   sDr = row;
   sDc = col;
-  Serial.print(sDr);
-  Serial.print(",");
-  Serial.println(sDc);
   int new_r=0,new_c=0;
   new_r=hrow+row;
   new_c=hcol+col;
-  Serial.print(new_r);
-  Serial.print(", ");
-  Serial.println(new_c);
   if (new_r>=X||new_r<0||new_c>=Y||new_c<0) {
     gameOver();
   }
@@ -376,6 +366,11 @@ uint32_t purple[6] = { //blue
 WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
+
+void printNothing(WebServer &server) { //for snakemove, should respond faster not sending the entire page.
+  server.println("good");
+}
+
 void printOk(WebServer &server) {
   server.println(F("HTTP/1.1 200 OK"));
   server.println(F("Content-Type: text/html"));
@@ -732,15 +727,10 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
 // this takes x/y coordinates and maps it to a pixel offset
 // your grid will need to be updated to match your pixel count and layout
 uint16_t g2p(uint16_t x, uint16_t y) {
-  //Serial.println("g2p");
-  //Serial.print("X: ");Serial.println(x);
-  //Serial.print("Y: ");Serial.println(y);
   if(x%2) { // if odd
-  //Serial.print("V: ");Serial.println((max_y * x) + y-1-max_y);
   return (max_y * x) + y-1-max_y;
   }
   else { //else true, so
-  //Serial.print("V: ");Serial.println((max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y));
   return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
   }
 }
@@ -1024,6 +1014,9 @@ void setup() {
 
 void loop()
 {
+  if(Serial1.available() > 0) {
+    defaultPattern = 9;
+  }
   unsigned long t = millis(); // Current elapsed time, milliseconds.
   EthernetBonjour.run();
   // listen for connections
@@ -1086,6 +1079,10 @@ void loop()
     p_cylon(purple);
     break;
   case 9:
+    if(Serial1.available() > 0) {
+       snakeButton = Serial1.read();
+       Serial.println(snakeButton);
+    }
     currentMillis = millis();
     if(currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
