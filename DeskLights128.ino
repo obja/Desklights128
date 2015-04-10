@@ -7,8 +7,8 @@
 #include "Ethernet.h"
 #include "WebServer.h"
 #include <Adafruit_GFX.h>
-#include <Adafruit_NeoMatrix.h>
 #include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoMatrix.h>
 
 /*** This is what you will almost certainly have to change ***/
 
@@ -976,7 +976,7 @@ void setup() {
   delay(3000);
   Serial.println("start");
   pinMode(23, OUTPUT);
-  digitalWrite(23, 675);
+  analogWrite(23, 675);
   Ethernet.begin(mac, ip);
   Serial.println(Ethernet.localIP());
   digitalWrite(10, HIGH);
