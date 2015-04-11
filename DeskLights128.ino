@@ -1002,7 +1002,7 @@ void setup() {
   theMatrix.setCursor(1,1);
   theMatrix.setTextWrap(false);
   
-  theMatrix.setRemapFunction(g2p);
+  //theMatrix.setRemapFunction(g2p); //this is causing issues with matrix.write() ? tested it at tinker night and was scrolling fine commented out.
   
   // light blip of light to signal we are ready to listen
   colorAll(Color(0,0,11));
