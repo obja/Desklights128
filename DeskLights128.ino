@@ -974,6 +974,7 @@ void setup() {
   digitalWrite(10, LOW);
   delay(1000); //resetting should fix our issues with not connecting intiially
   EthernetBonjour.begin("DeskLights");
+  EthernetBonjour.addServiceRecord("DeskLights128._desklights",80,MDNSServiceTCP);
   EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
