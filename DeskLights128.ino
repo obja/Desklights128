@@ -973,9 +973,18 @@ void setup() {
   delay(1000);
   digitalWrite(10, LOW);
   delay(1000); //resetting should fix our issues with not connecting intiially
-  EthernetBonjour.begin("DeskLights");
-  EthernetBonjour.addServiceRecord("DeskLights128._desklights",80,MDNSServiceTCP);
-  EthernetBonjour.addServiceRecord("DeskLights128._http",80,MDNSServiceTCP);
+  String tableName = "DeskLights." + String(ip[3]);
+  String tableNameDL = "DeskLights." + String(ip[3]) + "._desklights";
+  String tableNameHTTP = "DeskLights." + String(ip[3]) + "._http";
+  char tableNameAr[30];
+  char tableNameDLAr[30];
+  char tableNameHTTPAr[30];
+  tableName.toCharArray(tableNameAr, 30);
+  EthernetBonjour.begin(tableNameDLAr);
+  tableNameDL.toCharArray(tableNameDLAr, 30);
+  tableNameHTTP.toCharArray(tableNameHTTPAr, 30);
+  EthernetBonjour.addServiceRecord(tableNameDLAr,80,MDNSServiceTCP);
+  EthernetBonjour.addServiceRecord(tableNameHTTPAr,80,MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
