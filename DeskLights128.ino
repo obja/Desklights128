@@ -442,9 +442,9 @@ void drawLine(int16_t x0, int16_t y0,
 
   for (; x0<=x1; x0++) {
     if (steep) {
-      theMatrix.setPixelColor(y0, x0, color);
+      theMatrix.setPixelColor(g2p(y0, x0), color);
     } else {
-      theMatrix.setPixelColor(x0, y0, color);
+      theMatrix.setPixelColor(g2p(x0, y0), color);
     }
     err -= dy;
     if (err < 0) {
@@ -797,11 +797,12 @@ void alert(uint32_t c, int wait) {
 
 // flash color "c" on x/y/c/u as a rectangle
 void alertArea(uint32_t c, int x, int y, int xE, int yE) {
-  int w = xE-x;
-  int h = yE-y;
+  int w = xE-x+1;
+  int h = yE-y+1;
   for (int16_t i=x; i<x+w; i++) {
     drawFastVLine(i, y, h, c);
   }
+  theMatrix.show();
 }
 
 
@@ -1042,7 +1043,7 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
     c = Color(r,g,b);
   }
 
-  alertArea(c, x, xE, y, yE);
+  alertArea(c, x, y, xE, yE);
   printOk(server);
 }
 
