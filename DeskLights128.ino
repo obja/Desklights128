@@ -362,9 +362,11 @@ uint32_t purple[6] = { //blue
 WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
-void printNothing(WebServer &server) {
+
+void printNothing(WebServer &server) { //for snakemove, should respond faster not sending the entire page.
   server.println("good");
 }
+
 void printOk(WebServer &server) {
   server.println(F("HTTP/1.1 200 OK"));
   server.println(F("Content-Type: text/html"));
@@ -373,7 +375,7 @@ void printOk(WebServer &server) {
   server.println(F("<!DOCTYPE HTML PUBLIC -//W3C//DTD HTML 4.00 TRANSITIONAL//EN><html><head><title>")); //opening html
   server.println(F("DeskLights128</title>")); //title
   server.println(F("<meta name = 'viewport' content = 'width = device-width'> <meta name = 'viewport' content = 'initial-scale = 1.0'> </head>"));
-  server.print(F("<script> function process() { var url='write?c=' + document.getElementById('url').value; location.href=url; return false; } </script>")); //script for form submitting
+  server.print(F("<script> function process() { var url='write?l=' + document.getElementById('url').value.length + '&c=' + document.getElementById('url').value; location.href=url; return false; } </script>")); //script for form submitting
   server.print(F("<script> function process2() { var urlalert='alert?h=' + document.getElementById('alert').value + '&d=1000'; location.href=urlalert; return false; } </script>")); //script for alert submitting
   server.print(F("<script> function process3() { var urlalert='default?id=' + document.getElementById('default').value; location.href=urlalert; return false; } </script>")); //script for default submitting
   server.print(F("<script> function colortable() { var url='color?h=' + document.getElementById('colortab').value; location.href=url; return false; } </script><script> function colorpixel() { var url='pixel?x=' + document.getElementById('pixx').value + '&y=' + document.getElementById('pixy').value + '&h=' + document.getElementById('pixcolor').value; location.href=url; return false; } </script><script> function colorwipe() { var url='wipe?h=' + document.getElementById('wipecolor').value + '&d=' + document.getElementById('wipedel').value; location.href=url; return false; } </script>"));
@@ -406,6 +408,59 @@ P(noauth) = "User Denied\n";
 
 /*** Below here shouldn't need to change ***/
 // LED support functions
+
+void drawLine(int16_t x0, int16_t y0,
+			    int16_t x1, int16_t y1,
+			    uint16_t color) {
+  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+  if (steep) {
+    swap(x0, y0);
+    swap(x1, y1);
+  }
+
+  if (x0 > x1) {
+    swap(x0, x1);
+    swap(y0, y1);
+  }
+
+  int16_t dx, dy;
+  dx = x1 - x0;
+  dy = abs(y1 - y0);
+
+  int16_t err = dx / 2;
+  int16_t ystep;
+
+  if (y0 < y1) {
+    ystep = 1;
+  } else {
+    ystep = -1;
+  }
+
+  for (; x0<=x1; x0++) {
+    if (steep) {
+      theMatrix.setPixelColor(y0, x0, color);
+    } else {
+      theMatrix.setPixelColor(x0, y0, color);
+    }
+    err -= dy;
+    if (err < 0) {
+      y0 += ystep;
+      err += dx;
+    }
+  }
+}
+
+void drawFastVLine(int16_t x, int16_t y,
+				 int16_t h, uint16_t color) {
+  // Update in subclasses if desired!
+  drawLine(x, y, x, y+h-1, color);
+}
+
+void drawFastHLine(int16_t x, int16_t y,
+				 int16_t w, uint16_t color) {
+  // Update in subclasses if desired!
+  drawLine(x, y, x+w-1, y, color);
+}
 
 // create the "Color" value from rgb...This is right from Adafruit
 uint32_t Color(byte r, byte g, byte b) {
@@ -746,6 +801,15 @@ void alert(uint32_t c, int wait) {
   colorAll(Color(0,0,0));
 }
 
+// flash color "c" on x/y/c/u as a rectangle
+void alertArea(uint32_t c, int x, int y, int xE, int yE) {
+  int w = xE-x;
+  int h = yE-y;
+  for (int16_t i=x; i<x+w; i++) {
+    drawFastVLine(i, y, h, c);
+  }
+}
+
 
 
 // wipe the major colors through all pixels
@@ -935,6 +999,58 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
   printOk(server);
 }
 
+void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int r;
+  int g;
+  int b;
+  int use_hex = 0;
+  uint32_t c;
+  int x,xE,y,yE;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'h':
+        c = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 'x':
+        x = atoi(value);
+        break;
+      case 'y':
+        y = atoi(value);
+        break;
+      case 'c':
+        xE = atoi(value);
+        break;
+      case 'u':
+        yE = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (use_hex == 0) {
+    c = Color(r,g,b);
+  }
+
+  alertArea(c, x, xE, y, yE);
+  printOk(server);
+}
+
 void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   URLPARAM_RESULT rc;
   char name[NAMELEN];
@@ -970,20 +1086,24 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
-  theMatrix.setRotation(0);
-  Serial.begin(9600);
   Serial1.begin(9600);
-  delay(3000);
-  Serial.println("start");
-  pinMode(23, OUTPUT);
-  analogWrite(23, 675);
-  Ethernet.begin(mac, ip);
-  Serial.println(Ethernet.localIP());
+  Ethernet.begin(mac,ip);
   digitalWrite(10, HIGH);
   delay(1000);
   digitalWrite(10, LOW);
   delay(1000); //resetting should fix our issues with not connecting intiially
-  Serial.println(Ethernet.localIP());
+  String tableName = "DeskLights." + String(ip[3]);
+  String tableNameDL = "DeskLights." + String(ip[3]) + "._desklights";
+  String tableNameHTTP = "DeskLights." + String(ip[3]) + "._http";
+  char tableNameAr[30];
+  char tableNameDLAr[30];
+  char tableNameHTTPAr[30];
+  tableName.toCharArray(tableNameAr, 30);
+  EthernetBonjour.begin(tableNameDLAr);
+  tableNameDL.toCharArray(tableNameDLAr, 30);
+  tableNameHTTP.toCharArray(tableNameHTTPAr, 30);
+  EthernetBonjour.addServiceRecord(tableNameDLAr,80,MDNSServiceTCP);
+  EthernetBonjour.addServiceRecord(tableNameHTTPAr,80,MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
@@ -997,6 +1117,7 @@ void setup() {
   webserver.addCommand("test", &cmd_test);
   webserver.addCommand("vu", &cmd_vu);
   webserver.addCommand("snake", &cmd_snakemove);
+  webserver.addCommand("alertArea", &cmd_alertArea);
   webserver.begin();
   
   /* SNAKE SETUP */
@@ -1010,7 +1131,7 @@ void setup() {
   theMatrix.setCursor(1,1);
   theMatrix.setTextWrap(false);
   
-  theMatrix.setRemapFunction(g2p);
+  //theMatrix.setRemapFunction(g2p); //this is causing issues with matrix.write() ? tested it at tinker night and was scrolling fine commented out.
   
   // light blip of light to signal we are ready to listen
   colorAll(Color(0,0,11));
@@ -1023,6 +1144,9 @@ void setup() {
 
 void loop()
 {
+  if(Serial1.available() > 0) {
+    defaultPattern = 9;
+  }
   unsigned long t = millis(); // Current elapsed time, milliseconds.
   // listen for connections
   char buff[64];
