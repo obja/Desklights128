@@ -15,7 +15,7 @@
 
 // WEB stuff
 static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to match your arduino/shield
-static uint8_t ip[] = {   192,168,1,111 }; // update this to match your network
+static uint8_t ip[] = {   192,168,1,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
 
 
@@ -1150,6 +1150,7 @@ void loop()
     defaultPattern = 9;
   }
   unsigned long t = millis(); // Current elapsed time, milliseconds.
+  EthernetBonjour.run();
   // listen for connections
   char buff[64];
   int len = 64;
