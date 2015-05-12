@@ -412,7 +412,7 @@ P(noauth) = "User Denied\n";
 
 void drawLine(int16_t x0, int16_t y0,
 			    int16_t x1, int16_t y1,
-			    uint16_t color) {
+			    uint32_t color) {
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     swap(x0, y0);
@@ -452,13 +452,13 @@ void drawLine(int16_t x0, int16_t y0,
 }
 
 void drawFastVLine(int16_t x, int16_t y,
-				 int16_t h, uint16_t color) {
+				 int16_t h, uint32_t color) {
   // Update in subclasses if desired!
   drawLine(x, y, x, y+h-1, color);
 }
 
 void drawFastHLine(int16_t x, int16_t y,
-				 int16_t w, uint16_t color) {
+				 int16_t w, uint32_t color) {
   // Update in subclasses if desired!
   drawLine(x, y, x+w-1, y, color);
 }
