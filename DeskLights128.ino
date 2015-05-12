@@ -28,7 +28,7 @@ int defaultPattern = 0;
 Adafruit_NeoMatrix theMatrix = Adafruit_NeoMatrix(30, 8, PIN,
   NEO_MATRIX_BOTTOM     + NEO_MATRIX_LEFT +
   NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
-  NEO_RGB            + NEO_KHZ800);
+  NEO_GRB            + NEO_KHZ800);
 
 
 //Matrix Scrolling
