@@ -38,6 +38,9 @@ uint8_t       msgLen        = 0;              // Empty message
 int           msgX          = 16; // Start off right edge
 String writeCharStr = "";
 
+int aax,aay,aayE,aaxE;
+uint32_t aac;
+
 /* SNAKE SETUP */
 
 int snakeButton = 0;
@@ -1017,7 +1020,7 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
     if ((rc != URLPARAM_EOS)) {
       switch(name[0]) {
       case 'h':
-        c = hexColor(value);
+        aac = hexColor(value);
         use_hex = 1;
         break;
       case 'r':
@@ -1030,26 +1033,26 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
         b = atoi(value);
         break;
       case 'x':
-        x = atoi(value);
+        aax = atoi(value);
         break;
       case 'y':
-        y = atoi(value);
+        aay = atoi(value);
         break;
       case 'c':
-        xE = atoi(value);
+        aaxE = atoi(value);
         break;
       case 'u':
-        yE = atoi(value);
+        aayE = atoi(value);
         break;
       }
     }
   }
 
   if (use_hex == 0) {
-    c = Color(r,g,b);
+    aac = Color(r,g,b);
   }
-
-  alertArea(c, x, y, xE, yE);
+  
+  defaultPattern = 10;
   printOk(server);
 }
 
@@ -1218,6 +1221,18 @@ void loop()
       ignoreNextTimer=false;//resets the ignore bool
     }
     checkKeyboard();
+    break;
+    case 10:
+      for(int p=0;p<200;p++) {
+        alertArea(aac, aax, aay, aaxE, aayE);
+        aac--;
+        delay(5);
+      }
+      for(int p=0;p<200;p++) {
+        alertArea(aac, aax, aay, aaxE, aayE);
+        aac++;
+        delay(5);
+      }
     break;
   }
 }
