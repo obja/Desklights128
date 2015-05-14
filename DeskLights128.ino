@@ -415,7 +415,7 @@ P(noauth) = "User Denied\n";
 
 void drawLine(int16_t x0, int16_t y0,
 			    int16_t x1, int16_t y1,
-			    uint16_t color) {
+			    uint32_t color) {
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     swap(x0, y0);
@@ -455,13 +455,13 @@ void drawLine(int16_t x0, int16_t y0,
 }
 
 void drawFastVLine(int16_t x, int16_t y,
-				 int16_t h, uint16_t color) {
+				 int16_t h, uint32_t color) {
   // Update in subclasses if desired!
   drawLine(x, y, x, y+h-1, color);
 }
 
 void drawFastHLine(int16_t x, int16_t y,
-				 int16_t w, uint16_t color) {
+				 int16_t w, uint32_t color) {
   // Update in subclasses if desired!
   drawLine(x, y, x+w-1, y, color);
 }
@@ -1011,7 +1011,7 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
     if ((rc != URLPARAM_EOS)) {
       switch(name[0]) {
       case 'h':
-        c = hexColor(value);
+        aac = hexColor(value);
         use_hex = 1;
         break;
       case 'r':
@@ -1024,26 +1024,26 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
         b = atoi(value);
         break;
       case 'x':
-        x = atoi(value);
+        aax = atoi(value);
         break;
       case 'y':
-        y = atoi(value);
+        aay = atoi(value);
         break;
       case 'c':
-        xE = atoi(value);
+        aaxE = atoi(value);
         break;
       case 'u':
-        yE = atoi(value);
+        aayE = atoi(value);
         break;
       }
     }
   }
 
   if (use_hex == 0) {
-    c = Color(r,g,b);
+    aac = Color(r,g,b);
   }
 
-  alertArea(c, x, y, xE, yE);
+  defaultPattern = 10;
   printOk(server);
 }
 
@@ -1220,6 +1220,18 @@ void loop()
       ignoreNextTimer=false;//resets the ignore bool
     }
     checkKeyboard();
+    break;
+    case 10:
+      for(int p=0;p<200;p++) {
+        alertArea(aac, aax, aay, aaxE, aayE);
+        aac--;
+        delay(5);
+      }
+      for(int p=0;p<200;p++) {
+        alertArea(aac, aax, aay, aaxE, aayE);
+        aac++;
+        delay(5);
+      }
     break;
   }
 }
