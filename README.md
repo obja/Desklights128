@@ -7,7 +7,7 @@
 `http://server/write?l=1&c=H`
 will draw an H
 `http://server/write?l=5&c=hello`
-will draw Hello
+will draw hello
 2. Grid2Pixel function fixed for grid-style tables
 3. UDP server added for audio VU, with the command
 `http://server/vu?v=################`
@@ -24,6 +24,9 @@ would set
 
 ## Android Application Source (Glass, Phone and Wear)
 https://github.com/AlecH92/DeskLights128.android
+
+A new application was created to use as a notification tool straight from Android:
+https://github.com/AlecH92/DeskLights128.notifier
 
 ## Pebble Application Source
 https://github.com/AlecH92/DeskLights128.pebble
