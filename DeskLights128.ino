@@ -43,6 +43,9 @@ uint8_t       msgLen        = 0;              // Empty message
 int           msgX          = 16; // Start off right edge
 String writeCharStr = "";
 
+uint32_t aac;
+int aayE, aaxE, aay, aax;
+
 //ada gfx vars
 int16_t cursor_x_orig = 1;
 int16_t cursor_y_orig = 1;
@@ -601,10 +604,11 @@ void p_cylon(uint32_t c[6]) {
   }
 
 }
+
 //visualizer, takes string of 16 numbers which are Y heights
 void vu(String input) {
   uint32_t color = Color(255,0,0);
-  for(int i = 0; i<16; i++) {
+  for(int i = 0; i<input.length(); i++) {
     int y = input.charAt(i) - '0';
     if(y > max_y) {
       y = max_y;
@@ -617,6 +621,9 @@ void vu(String input) {
     else {
       int y_orig = y;
       for(y; y>0; y--) {
+        if(y>6) color = Color(255,0,0);
+        else if(y>3) color = Color(255,128,0);
+        else color = Color(255,255,0);
         theMatrix.setPixelColor(g2p(i+1,y), color);
       }
       y = y_orig+1;
