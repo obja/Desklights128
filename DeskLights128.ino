@@ -1,6 +1,6 @@
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 20
-#define PIN 6
+#define PIN 2
 
 #include "SPI.h"
 #include "avr/pgmspace.h"
@@ -17,8 +17,10 @@
 static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to match your arduino/shield
 static uint8_t ip[] = {   192,168,1,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
-
-
+//UDP stuff
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+EthernetUDP Udp;
+unsigned int localPort = 8888;
 //LED Grid Stuff
 uint16_t max_x = 30;
 uint16_t max_y = 8;
@@ -617,6 +619,9 @@ void vu(String input) {
     else {
       int y_orig = y;
       for(y; y>0; y--) {
+        if(y>6) color = Color(255,0,0);
+        else if(y>3) color = Color(255,128,0);
+        else color = Color(255,255,0);
         theMatrix.setPixelColor(g2p(i+1,y), color);
       }
       y = y_orig+1;
@@ -1124,6 +1129,7 @@ void setup() {
   webserver.addCommand("snake", &cmd_snakemove);
   webserver.addCommand("alertArea", &cmd_alertArea);
   webserver.begin();
+  Udp.begin(localPort);
   
   /* SNAKE SETUP */
   hrow=sx;//set the row of the snake head
@@ -1158,6 +1164,12 @@ void loop()
   char buff[64];
   int len = 64;
   webserver.processConnection(buff, &len);
+  int packetSize = Udp.parsePacket();
+  if(packetSize) {
+    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
+    vu(packetBuffer);
+    theMatrix.show();
+  }
   
   switch(defaultPattern) {
   case 1:
