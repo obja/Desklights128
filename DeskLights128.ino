@@ -1,6 +1,6 @@
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 20
-#define PIN 6
+#define PIN 2
 
 #include "SPI.h"
 #include "avr/pgmspace.h"
@@ -18,6 +18,10 @@ static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0xF9, 0x04, 0xF9 }; // update this to
 static uint8_t ip[] = {   192,168,1,220 }; // update this to match your network
 String theIP = (String)ip[0] + "." + (String)ip[1] + "." + (String)ip[2] + "." + (String)ip[3]; //create the IP as a string
 
+//UDP stuff
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
+EthernetUDP Udp;
+unsigned int localPort = 8888;
 
 //LED Grid Stuff
 uint16_t max_x = 30;
@@ -605,6 +609,7 @@ void p_cylon(uint32_t c[6]) {
 void vu(String input) {
   uint32_t color = Color(255,0,0);
   for(int i = 0; i<16; i++) {
+  for(int i = 0; i<input.length(); i++) {
     int y = input.charAt(i) - '0';
     if(y > max_y) {
       y = max_y;
@@ -617,6 +622,9 @@ void vu(String input) {
     else {
       int y_orig = y;
       for(y; y>0; y--) {
+        if(y>6) color = Color(255,0,0);
+        else if(y>3) color = Color(255,128,0);
+        else color = Color(255,255,0);
         theMatrix.setPixelColor(g2p(i+1,y), color);
       }
       y = y_orig+1;
@@ -671,6 +679,7 @@ void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, b
       switch(name[0]) {
         case 'v':
         for(int i = 0; i<16; i++) {
+        for(int i = 0; i<30; i++) {
           inputData += String(value[i] - '0');
         }
         break;
@@ -1091,12 +1100,37 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
-  Serial1.begin(9600);
-  Ethernet.begin(mac,ip);
-  digitalWrite(10, HIGH);
+  Serial.begin(9600);
+  //send first message after serial port is connected
+  Serial.println(F("Initializing... "));
+  
+  // start the Ethernet connection:
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println(F("Failed to configure Ethernet using DHCP"));
+    // DHCP failed, so use a fixed IP address:
+    Ethernet.begin(mac, ip);
+    Serial.println(F("Fixed IP initialization complete"));
+  }
+  else
+  {
+    Serial.println(F("Configured Ethernet using DHCP"));
+  }
+  /*digitalWrite(10, HIGH);
   delay(1000);
   digitalWrite(10, LOW);
-  delay(1000); //resetting should fix our issues with not connecting intiially
+  delay(1000); //resetting should fix our issues with not connecting intiially*/
+  Serial.print(("device IP is: "));
+  Serial.println(Ethernet.localIP());
+  
+  Serial.print(("gateway IP is: "));
+  Serial.println(Ethernet.gatewayIP());
+  
+  Serial.print(("subnet mask is: "));
+  Serial.println(Ethernet.subnetMask());
+
+  Serial.print(("DNS is: "));
+  Serial.println(Ethernet.dnsServerIP());
+
   String tableName = "DeskLights." + String(ip[3]);
   String tableNameDL = "DeskLights." + String(ip[3]) + "._desklights";
   String tableNameHTTP = "DeskLights." + String(ip[3]) + "._http";
@@ -1124,6 +1158,7 @@ void setup() {
   webserver.addCommand("snake", &cmd_snakemove);
   webserver.addCommand("alertArea", &cmd_alertArea);
   webserver.begin();
+  Udp.begin(localPort);
   
   /* SNAKE SETUP */
   hrow=sx;//set the row of the snake head
@@ -1143,21 +1178,25 @@ void setup() {
   delay(500);
   colorAll(Color(0,0,0));
   
-  Serial.begin(9600);
-  Serial.println(Ethernet.localIP());
 }
 
 void loop()
 {
-  if(Serial1.available() > 0) {
+  /*if(Serial1.available() > 0) {
     defaultPattern = 9;
-  }
+  }*/
   unsigned long t = millis(); // Current elapsed time, milliseconds.
   EthernetBonjour.run();
   // listen for connections
   char buff[64];
   int len = 64;
   webserver.processConnection(buff, &len);
+ /* int packetSize = Udp.parsePacket();
+  if(packetSize) {
+    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
+    vu(packetBuffer);
+    theMatrix.show();
+  }*/
   
   switch(defaultPattern) {
   case 1:
@@ -1207,10 +1246,10 @@ void loop()
     p_cylon(purple);
     break;
   case 9:
-    if(Serial1.available() > 0) {
+    /*if(Serial1.available() > 0) {
        snakeButton = Serial1.read();
        Serial.println(snakeButton);
-    }
+    }*/
     currentMillis = millis();
     if(currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
