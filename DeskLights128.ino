@@ -608,7 +608,6 @@ void p_cylon(uint32_t c[6]) {
 //visualizer, takes string of 16 numbers which are Y heights
 void vu(String input) {
   uint32_t color = Color(255,0,0);
-  for(int i = 0; i<16; i++) {
   for(int i = 0; i<input.length(); i++) {
     int y = input.charAt(i) - '0';
     if(y > max_y) {
@@ -678,7 +677,6 @@ void cmd_vu(WebServer &server, WebServer::ConnectionType type, char *url_tail, b
     if ((rc != URLPARAM_EOS)) {
       switch(name[0]) {
         case 'v':
-        for(int i = 0; i<16; i++) {
         for(int i = 0; i<30; i++) {
           inputData += String(value[i] - '0');
         }
@@ -1191,12 +1189,12 @@ void loop()
   char buff[64];
   int len = 64;
   webserver.processConnection(buff, &len);
- /* int packetSize = Udp.parsePacket();
+  int packetSize = Udp.parsePacket();
   if(packetSize) {
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     vu(packetBuffer);
     theMatrix.show();
-  }*/
+  }
   
   switch(defaultPattern) {
   case 1:
