@@ -28,7 +28,7 @@ uint16_t max_x = 30;
 uint16_t max_y = 8;
 
 #define STRIPLEN 128
-int defaultPattern = 0;
+int defaultPattern = 6;
 Adafruit_NeoMatrix theMatrix = Adafruit_NeoMatrix(30, 8, PIN,
   NEO_MATRIX_BOTTOM     + NEO_MATRIX_LEFT +
   NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
@@ -37,7 +37,7 @@ Adafruit_NeoMatrix theMatrix = Adafruit_NeoMatrix(30, 8, PIN,
 
 //Matrix Scrolling
 unsigned long prevFrameTime = 0L;             // For animation timing
-#define FPS 10                                // Scrolling speed
+#define FPS 20                                // Scrolling speed
 uint8_t       msgLen        = 0;              // Empty message
 int           msgX          = 16; // Start off right edge
 String writeCharStr = "";
@@ -1098,9 +1098,15 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
+  delay(1000);
   Serial.begin(9600);
   //send first message after serial port is connected
   Serial.println(F("Initializing... "));
+  
+  digitalWrite(10, HIGH);
+  delay(1000);
+  digitalWrite(10, LOW);
+  delay(1000); //resetting should fix our issues with not connecting intiially
   
   // start the Ethernet connection:
   if (Ethernet.begin(mac) == 0) {
@@ -1113,10 +1119,6 @@ void setup() {
   {
     Serial.println(F("Configured Ethernet using DHCP"));
   }
-  /*digitalWrite(10, HIGH);
-  delay(1000);
-  digitalWrite(10, LOW);
-  delay(1000); //resetting should fix our issues with not connecting intiially*/
   Serial.print(("device IP is: "));
   Serial.println(Ethernet.localIP());
   
