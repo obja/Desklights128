@@ -499,6 +499,60 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
   printOk(server);
 }
 
+void fetchData(int *inData, WebServer &server, char *webData) {
+  int r;
+  int g;
+  int b;
+  int use_hex = 0;
+  uint32_t c;
+  int x,xE,y,yE;
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(webData)) {
+    rc = server.nextURLparam(&webData, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'h':
+        aac = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 'x':
+        aax = atoi(value);
+        break;
+      case 'y':
+        aay = atoi(value);
+        break;
+      case 'c':
+        aaxE = atoi(value);
+        break;
+      case 'u':
+        aayE = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (use_hex == 0) {
+    aac = theMatrix.Color(r,g,b);
+  }
+
+  inData[0] = aax;
+  inData[1] = aay;
+  inData[2] = aaxE;
+  inData[3] = aayE;
+  inData[4] = aac;
+}
+
 void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int r;
   int g;
@@ -506,6 +560,8 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
   int use_hex = 0;
   uint32_t c;
   int x,xE,y,yE;
+  int data[10];
+  fetchData(data, server, url_tail);
 
   URLPARAM_RESULT rc;
   char name[NAMELEN];
