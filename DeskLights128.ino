@@ -3,7 +3,7 @@
 
 #include "SPI.h"
 #include "avr/pgmspace.h"
-//#include "WebServer.h"
+#include "WebServer.h"
 #include "NeoMatrix_WS2801.h"
 #include "Adafruit_WS2801.h"
 #include "Adafruit_GFX.h"
@@ -15,7 +15,6 @@ const char ssid[] = "Twim"; // your network SSID (name)
 const char pass[] = "12345678"; // your network password
 int status = WL_IDLE_STATUS; // the Wifi radio's status
 int reqCount = 0; // number of requests received
-WiFiEspServer server(80);
 
 // LED Stuff
 const uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
@@ -62,7 +61,7 @@ const uint32_t purple[6] = { theMatrix.Color(127,0,255), theMatrix.Color(100,0,2
 
 /*** Things you might want to change ***/
 
-/*WebServer webserver("", 80); // port to listen on
+WebServer webserver("", 80); // port to listen on
 
 // ROM-based messages for webduino lib, maybe overkill here
 
@@ -108,7 +107,7 @@ P(noauth) = "User Denied\n";
 // max length of param names and values
 #define NAMELEN 2
 #define VALUELEN 32
-*/
+
 /*** Below here shouldn't need to change ***/
 
 // create a "Color" value from a hex string (no prefix)
@@ -264,7 +263,274 @@ void vu(String input) {
     }
   }
 }
-/*
+
+// fade from one color to another: UNFINISHED
+void fade(uint32_t c1, uint32_t c2, int wait) {
+  if (c1 < c2) {
+    while (c1 < c2) {
+      colorAll(c1++);
+      delay(wait);
+    }
+  } 
+  else {
+    while (c1 > c2) {
+      colorAll(c1--);
+      delay(wait);
+    }
+  }
+}
+
+// this takes x/y coordinates and maps it to a pixel offset
+// your grid will need to be updated to match your pixel count and layout
+uint16_t g2p(uint16_t x, uint16_t y) {
+  if(x%2) { // if odd
+  return (max_y * x) + y-1-max_y;
+  }
+  else { //else true, so
+  return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
+  }
+}
+
+// flash color "c" for "wait" ms
+void alert(uint32_t c, int wait) {
+  colorAll(c);
+  delay(wait);
+  colorAll(theMatrix.Color(0,0,0));
+}
+
+// flash color "c" on x/y/c/u as a rectangle
+void alertArea(uint32_t c, int x, int y, int xE, int yE) {
+  int w = xE-x+1;
+  int16_t h = yE-y+1;
+  for (int16_t i=x; i<x+w; i++) {
+    theMatrix.drawFastVLine(i, y, h, c);
+  }
+  theMatrix.show();
+}
+
+// wipe the major colors through all pixels
+void lightTest(int wait) {
+  colorWipe(theMatrix.Color(255, 0, 0), wait);
+  colorWipe(theMatrix.Color(0, 255, 0), wait);
+  colorWipe(theMatrix.Color(0, 0, 255), wait);
+  colorWipe(theMatrix.Color(255, 255, 255), wait);
+  colorWipe(theMatrix.Color(0, 0, 0), wait);
+}
+
+void cmd_index(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  printOk(server);
+}
+
+void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  server.httpFail();
+}
+
+void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  colorAll(theMatrix.Color(0,0,0));
+  //cursor_x = cursor_x_orig;
+  //cursor_y = cursor_y_orig;
+  printOk(server);
+}
+
+void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int r;
+  int g;
+  int b;
+  uint32_t c;
+  int use_hex = 0;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'h':
+        c = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (!use_hex) {
+    c = theMatrix.Color(r,g,b);
+  }
+  colorAll(c);
+  printOk(server);
+}
+
+void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int r;
+  int g;
+  int b;
+  int delay;
+  uint32_t c;
+  int use_hex = 0;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 'h':
+        c = hexColor(value);
+        use_hex++;
+        break;
+      case 'd':
+        delay = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (!use_hex) {
+    c = theMatrix.Color(r,g,b);
+  }
+
+  printOk(server);
+  colorWipe(c, delay);
+}
+
+void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      if (name[0] == 'i') {
+        defaultPattern = atoi(value);
+        colorAllDef(theMatrix.Color(0,0,0));
+      }
+    }
+  }
+
+  printOk(server);
+}
+
+void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int r;
+  int g;
+  int b;
+  int d;
+  int use_hex = 0;
+  uint32_t c;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'h':
+        c = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 'd':
+        d = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (use_hex == 0) {
+    c = theMatrix.Color(r,g,b);
+  }
+
+  if (!d) {
+    d = 100;
+  }
+
+  alert(c, d);
+  printOk(server);
+}
+
+void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
+  int r;
+  int g;
+  int b;
+  int use_hex = 0;
+  uint32_t c;
+  int x,xE,y,yE;
+
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+  while (strlen(url_tail)) {
+    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+    if ((rc != URLPARAM_EOS)) {
+      switch(name[0]) {
+      case 'h':
+        aac = hexColor(value);
+        use_hex = 1;
+        break;
+      case 'r':
+        r = atoi(value);
+        break;
+      case 'g':
+        g = atoi(value);
+        break;
+      case 'b':
+        b = atoi(value);
+        break;
+      case 'x':
+        aax = atoi(value);
+        break;
+      case 'y':
+        aay = atoi(value);
+        break;
+      case 'c':
+        aaxE = atoi(value);
+        break;
+      case 'u':
+        aayE = atoi(value);
+        break;
+      }
+    }
+  }
+
+  if (use_hex == 0) {
+    aac = theMatrix.Color(r,g,b);
+  }
+
+  defaultPattern = 10;
+  printOk(server);
+}
+
 void cmd_writechar(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
   int theLength;
   writeCharStr = "";
@@ -386,7 +652,7 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
   }
 
   if (use_hex == 0) {
-    c = Color(r,g,b);
+    c = theMatrix.Color(r,g,b);
   }
 
   theMatrix.setPixelColor(id, c);
@@ -396,292 +662,6 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
   }
 
   defaultPattern = 0;
-  printOk(server);
-}
-*/
-// fade from one color to another: UNFINISHED
-void fade(uint32_t c1, uint32_t c2, int wait) {
-  if (c1 < c2) {
-    while (c1 < c2) {
-      colorAll(c1++);
-      delay(wait);
-    }
-  } 
-  else {
-    while (c1 > c2) {
-      colorAll(c1--);
-      delay(wait);
-    }
-  }
-}
-
-// this takes x/y coordinates and maps it to a pixel offset
-// your grid will need to be updated to match your pixel count and layout
-uint16_t g2p(uint16_t x, uint16_t y) {
-  if(x%2) { // if odd
-  return (max_y * x) + y-1-max_y;
-  }
-  else { //else true, so
-  return (max_y * x) + y -1 -max_y + ((max_y - 1)*-1) + 2 * (max_y - y);
-  }
-}
-
-// flash color "c" for "wait" ms
-void alert(uint32_t c, int wait) {
-  colorAll(c);
-  delay(wait);
-  colorAll(theMatrix.Color(0,0,0));
-}
-
-// flash color "c" on x/y/c/u as a rectangle
-void alertArea(uint32_t c, int x, int y, int xE, int yE) {
-  int w = xE-x+1;
-  int16_t h = yE-y+1;
-  for (int16_t i=x; i<x+w; i++) {
-    theMatrix.drawFastVLine(i, y, h, c);
-  }
-  theMatrix.show();
-}
-
-
-
-// wipe the major colors through all pixels
-void lightTest(int wait) {
-  colorWipe(theMatrix.Color(255, 0, 0), wait);
-  colorWipe(theMatrix.Color(0, 255, 0), wait);
-  colorWipe(theMatrix.Color(0, 0, 255), wait);
-  colorWipe(theMatrix.Color(255, 255, 255), wait);
-  colorWipe(theMatrix.Color(0, 0, 0), wait);
-}
-/*
-void cmd_index(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  printOk(server);
-}
-
-void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  server.httpFail();
-}
-
-void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  colorAll(theMatrix.Color(0,0,0));
-  cursor_x = cursor_x_orig;
-  cursor_y = cursor_y_orig;
-  printOk(server);
-}
-
-void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  uint32_t c;
-  int use_hex = 0;
-
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-      case 'h':
-        c = hexColor(value);
-        use_hex = 1;
-        break;
-      case 'r':
-        r = atoi(value);
-        break;
-      case 'g':
-        g = atoi(value);
-        break;
-      case 'b':
-        b = atoi(value);
-        break;
-      }
-    }
-  }
-
-  if (!use_hex) {
-    c = Color(r,g,b);
-  }
-  colorAll(c);
-  printOk(server);
-}
-
-void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  int delay;
-  uint32_t c;
-  int use_hex = 0;
-
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-      case 'r':
-        r = atoi(value);
-        break;
-      case 'g':
-        g = atoi(value);
-        break;
-      case 'b':
-        b = atoi(value);
-        break;
-      case 'h':
-        c = hexColor(value);
-        use_hex++;
-        break;
-      case 'd':
-        delay = atoi(value);
-        break;
-      }
-    }
-  }
-
-  if (!use_hex) {
-    c = Color(r,g,b);
-  }
-
-  printOk(server);
-  colorWipe(c, delay);
-}
-
-void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      if (name[0] == 'i') {
-        defaultPattern = atoi(value);
-        colorAllDef(theMatrix.Color(0,0,0));
-      }
-    }
-  }
-
-  printOk(server);
-}
-
-void cmd_snakemove(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      if (name[0] == 'i') {
-        snakeButton = atoi(value);
-        Serial.println(snakeButton);
-      }
-    }
-  }
-
-  printOk(server);
-}
-
-void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  int d;
-  int use_hex = 0;
-  uint32_t c;
-
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-      case 'h':
-        c = hexColor(value);
-        use_hex = 1;
-        break;
-      case 'r':
-        r = atoi(value);
-        break;
-      case 'g':
-        g = atoi(value);
-        break;
-      case 'b':
-        b = atoi(value);
-        break;
-      case 'd':
-        d = atoi(value);
-        break;
-      }
-    }
-  }
-
-  if (use_hex == 0) {
-    c = Color(r,g,b);
-  }
-
-  if (!d) {
-    d = 100;
-  }
-
-  alert(c, d);
-  printOk(server);
-}
-
-void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  int r;
-  int g;
-  int b;
-  int use_hex = 0;
-  uint32_t c;
-  int x,xE,y,yE;
-
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      switch(name[0]) {
-      case 'h':
-        aac = hexColor(value);
-        use_hex = 1;
-        break;
-      case 'r':
-        r = atoi(value);
-        break;
-      case 'g':
-        g = atoi(value);
-        break;
-      case 'b':
-        b = atoi(value);
-        break;
-      case 'x':
-        aax = atoi(value);
-        break;
-      case 'y':
-        aay = atoi(value);
-        break;
-      case 'c':
-        aaxE = atoi(value);
-        break;
-      case 'u':
-        aayE = atoi(value);
-        break;
-      }
-    }
-  }
-
-  if (use_hex == 0) {
-    aac = Color(r,g,b);
-  }
-
-  defaultPattern = 10;
   printOk(server);
 }
 
@@ -716,12 +696,11 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 
   printOk(server);
 }
-*/
+
 // begin standard arduino setup and loop pattern
 
 void setup() {
-//  Serial1.begin(9600);
-  /*
+  Serial1.begin(9600);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
@@ -734,9 +713,8 @@ void setup() {
   webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("test", &cmd_test);
   webserver.addCommand("vu", &cmd_vu);
-  webserver.addCommand("snake", &cmd_snakemove);
   webserver.addCommand("alertArea", &cmd_alertArea);
-  webserver.begin();*/
+  webserver.begin();
   
   theMatrix.begin();
   theMatrix.setCursor(1,1);
@@ -754,9 +732,9 @@ void loop()
 {
   unsigned long t = millis(); // Current elapsed time, milliseconds.
   // listen for connections
- /* char buff[64];
+  char buff[64];
   int len = 64;
-  webserver.processConnection(buff, &len);*/
+  webserver.processConnection(buff, &len);
   
   switch(defaultPattern) {
   case 1:
@@ -806,7 +784,7 @@ void loop()
     p_cylon(blue);
     p_cylon(purple);
     break;
-    case 10:
+  case 10:
       for(int p=0;p<200;p++) {
         alertArea(aac, aax, aay, aaxE, aayE);
         aac--;
