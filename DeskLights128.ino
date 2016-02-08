@@ -32,13 +32,16 @@ uint16_t max_x = 16;
 uint16_t max_y = 8;
 
 #define STRIPLEN 128
-int defaultPattern = 0;
-Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,WS2801_RGB);
+int defaultPattern = 6;
+Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,
+  NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT +
+  NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
+  WS2801_RGB);
 
 
 //Matrix Scrolling
 unsigned long prevFrameTime = 0L;             // For animation timing
-#define FPS 10                                // Scrolling speed
+#define FPS 20                                // Scrolling speed
 uint8_t       msgLen        = 0;              // Empty message
 int           msgX          = 16; // Start off right edge
 String writeCharStr = "";
@@ -1089,12 +1092,39 @@ void cmd_test(WebServer &server, WebServer::ConnectionType type, char *url_tail,
 // begin standard arduino setup and loop pattern
 
 void setup() {
-  Serial1.begin(9600);
-  Ethernet.begin(mac,ip);
+  delay(1000);
+  Serial.begin(9600);
+  //send first message after serial port is connected
+  Serial.println(F("Initializing... "));
+  
   digitalWrite(10, HIGH);
   delay(1000);
   digitalWrite(10, LOW);
   delay(1000); //resetting should fix our issues with not connecting intiially
+  
+  // start the Ethernet connection:
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println(F("Failed to configure Ethernet using DHCP"));
+    // DHCP failed, so use a fixed IP address:
+    Ethernet.begin(mac, ip);
+    Serial.println(F("Fixed IP initialization complete"));
+  }
+  else
+  {
+    Serial.println(F("Configured Ethernet using DHCP"));
+  }
+  Serial.print(("device IP is: "));
+  Serial.println(Ethernet.localIP());
+  
+  Serial.print(("gateway IP is: "));
+  Serial.println(Ethernet.gatewayIP());
+  
+  Serial.print(("subnet mask is: "));
+  Serial.println(Ethernet.subnetMask());
+
+  Serial.print(("DNS is: "));
+  Serial.println(Ethernet.dnsServerIP());
+
   String tableName = "DeskLights." + String(ip[3]);
   String tableNameDL = "DeskLights." + String(ip[3]) + "._desklights";
   String tableNameHTTP = "DeskLights." + String(ip[3]) + "._http";
