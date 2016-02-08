@@ -1,3 +1,4 @@
+#include <PubSubClient.h>
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 20
 #define PIN 2
@@ -293,6 +294,43 @@ uint16_t SetElement(uint16_t row, uint16_t col)
 
 
 /* END SNAKE SETUP */
+
+/* MQTT START */
+IPAddress iotEclipse(198, 41, 30, 241);
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  if(length>2) {
+    Serial.println("length > 2");
+    if((char)payload[0] == 'd' && (char)payload[1] == 'p') {
+      Serial.println("mqtt dp");
+      defaultPattern = payload[2] - '0';
+      Serial.println(defaultPattern);
+    }
+  }
+  for (int i=0;i<length;i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+EthernetClient ethClient;
+PubSubClient client(ethClient);
+void MQTTConnect() {
+  Serial.println("MQTT starting connection");
+  while (!client.connected()) {
+    if(client.connect("DeskLights128")) {
+      client.subscribe("DeskLights128");
+      Serial.println("Subscribed");
+    }
+    else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      delay(1000);
+    }
+  }
+}
+/* MQTT END */
 
 // 'graph' style x,y where 0,0 is bottom left
 
@@ -1177,7 +1215,9 @@ void setup() {
   colorAll(Color(0,0,11));
   delay(500);
   colorAll(Color(0,0,0));
-  
+  client.setServer(iotEclipse, 1883);
+  client.setCallback(callback);
+  MQTTConnect();
 }
 
 void loop()
@@ -1197,6 +1237,10 @@ void loop()
     vu(packetBuffer);
     theMatrix.show();
   }
+  if (!client.connected()) {
+    MQTTConnect();
+  }
+  client.loop();
   
   switch(defaultPattern) {
   case 1:
