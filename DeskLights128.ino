@@ -154,8 +154,21 @@ void colorWipe(uint32_t c, uint8_t wait) {
     theMatrix.setPixelColor(i, c);
     defaultPattern = 0;
     theMatrix.show();
-    delay(wait);
+    unsigned long nowTime = millis();
+    antiDelay(nowTime, wait);
   }
+}
+
+void antiDelay(unsigned long nowTime, uint8_t delayTime) {
+  unsigned long arduinoTime = millis();
+  while(arduinoTime - nowTime < delayTime) {
+    arduinoTime = millis();
+    //check for new web requests
+    char buff[64];
+    int len = 64;
+    webserver.processConnection(buff, &len);
+  }
+  return;
 }
 // show the grid to verify
 void gridTest(int wait) {
@@ -173,7 +186,8 @@ void gridTest(int wait) {
       defaultPattern = 0;
       theMatrix.setPixelColor(g2p(x,y), on);
       theMatrix.show();
-      delay(wait);
+      unsigned long nowTime = millis();
+      antiDelay(nowTime, wait);
       theMatrix.setPixelColor(g2p(x,y), off);
       theMatrix.show();
     }
@@ -187,7 +201,8 @@ void p_random (int wait) {
   theMatrix.Color(random(0,255), random(0,255), random(0,255))
     );
   theMatrix.show();
-  delay(wait);
+  unsigned long nowTime = millis();
+  antiDelay(nowTime, wait);
 }
 
 // If you were at maker faire, you know this pattern
@@ -217,7 +232,8 @@ void p_cylon(const uint32_t c[6]) {
       mod++;
     }
     theMatrix.show();
-    delay(wait);
+    unsigned long nowTime = millis();
+    antiDelay(nowTime, wait);
   }
 
   for (x=max_x; x >= 0; x--) {
@@ -230,7 +246,8 @@ void p_cylon(const uint32_t c[6]) {
       mod++;
     }
     theMatrix.show();
-    delay(wait);
+    unsigned long nowTime = millis();
+    antiDelay(nowTime, wait);
   }
 
 }
@@ -269,13 +286,15 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
   if (c1 < c2) {
     while (c1 < c2) {
       colorAll(c1++);
-      delay(wait);
+      unsigned long nowTime = millis();
+      antiDelay(nowTime, wait);
     }
   } 
   else {
     while (c1 > c2) {
       colorAll(c1--);
-      delay(wait);
+      unsigned long nowTime = millis();
+      antiDelay(nowTime, wait);
     }
   }
 }
@@ -294,7 +313,8 @@ uint16_t g2p(uint16_t x, uint16_t y) {
 // flash color "c" for "wait" ms
 void alert(uint32_t c, int wait) {
   colorAll(c);
-  delay(wait);
+  unsigned long nowTime = millis();
+  antiDelay(nowTime, wait);
   colorAll(theMatrix.Color(0,0,0));
 }
 
@@ -722,7 +742,8 @@ void setup() {
   
   // light blip of light to signal we are ready to listen
   colorAll(theMatrix.Color(0,0,11));
-  delay(500);
+  unsigned long nowTime = millis();
+  antiDelay(nowTime, 500);
   colorAll(theMatrix.Color(0,0,0));
   
   Serial.begin(9600);
@@ -788,13 +809,15 @@ void loop()
       for(int p=0;p<200;p++) {
         alertArea(aac, aax, aay, aaxE, aayE);
         aac--;
-        delay(5);
+        unsigned long nowTime = millis();
+        antiDelay(nowTime, 5);
       }
       for(int p=0;p<200;p++) {
         alertArea(aac, aax, aay, aaxE, aayE);
         aac++;
-        delay(5);
-      }
+        unsigned long nowTime = millis();
+        antiDelay(nowTime, 5);
+        }
     break;
   }
 }
