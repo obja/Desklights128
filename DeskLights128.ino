@@ -475,6 +475,12 @@ void p_rainbow() {
   for (j = 0; j < 256; j++) {
     for (i = 0; i < theMatrix.numPixels(); i++) {
       theMatrix.setPixelColor(i, Wheel( ((i * 256 / theMatrix.numPixels()) + j) & 255) );
+      if (webserver.available()) {
+        char buff[64];
+        int len = 64;
+        webserver.processConnection(buff, &len);
+        return;
+      }
     }
     theMatrix.show();
   }
