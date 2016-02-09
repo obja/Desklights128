@@ -167,6 +167,7 @@ void antiDelay(unsigned long nowTime, uint8_t delayTime) {
     char buff[64];
     int len = 64;
     webserver.processConnection(buff, &len);
+    break;
   }
   return;
 }
