@@ -1,6 +1,6 @@
-#include <PubSubClient.h>
 #define WEBDUINO_FAIL_MESSAGE "NOT ok\n"
 #define WEBDUINO_COMMANDS_COUNT 20
+#define WEBDUINO_SERIAL_DEBUGGING 1
 #define PIN 2
 
 #include "SPI.h"
@@ -11,6 +11,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_NeoMatrix.h>
+
+unsigned long lastCheck = 0;
 
 /*** This is what you will almost certainly have to change ***/
 
@@ -46,292 +48,6 @@ String writeCharStr = "";
 int aax,aay,aayE,aaxE;
 uint32_t aac;
 
-/* SNAKE SETUP */
-
-int snakeButton = 0;
-
-int hrow=0,hcol=0;//sets the row and col of the snake head
-bool game = true;//game is good
-bool start = false;//start the game with true
-bool ignoreNextTimer=false;//tells the game timer weither or not it should run
-//When true the game timer will not update due to the update by a keypress
-int sx=8,sy=4;//set snake location
-long previousMillis = 0;//used for the game timer
-long interval = 500; //how long between each update of the game
-unsigned long currentMillis = 0;//used for the game timer
-
-int sDr=1,sDc=0;//used to keep last direction, start off going up
-
-//int array[Y * X];
-uint16_t SetElement(uint16_t, uint16_t);//2D array into a number
-
-#define X 30//this is the depth of the field
-#define Y 8//this is the length of the field
-
-int gameBoard[X][Y] = //game field, 0 is empty, -1 is food, >0 is snake
-{
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0}
-};
-
-void checkKeyboard() {
-    if (snakeButton == 1) {
-      Serial.println("[Left]");
-      if (game&&start) {
-        moveSnake(-1,0);
-	ignoreNextTimer=true;
-      }
-    }
-    else if (snakeButton == 2) { 
-      Serial.println("[Right]");
-      if (game&&start) {
-        moveSnake(1,0);
-	ignoreNextTimer=true;
-      }
-    }
-    else if (snakeButton == 3) {
-      Serial.println("[Up]");
-      if (game&&start) {
-        moveSnake(0,1);
-	ignoreNextTimer=true;
-      }
-    }
-    else if (snakeButton == 4) {
-      Serial.println("[Down]");
-      if (game&&start) {
-        moveSnake(0,-1);
-	ignoreNextTimer=true;
-      }
-    }
-    else if (snakeButton == 5) {
-      resetGame();
-    }
-    else if (snakeButton == 6) {
-      start = true;
-      drawBoard();
-    }
-    snakeButton = 0;
-}
-
-void updateGame() {
-  if (game && start) {
-    moveSnake(sDr,sDc);
-  }
-  if (game && start) {
-    drawBoard();
-  }
-}
-
-void resetGame() {
-  resetBoard();
-  sDr=1; //move up
-  sDc=0;
-  loadSnake();
-  placeFood();
-  findSnakeHead();//find where the snake is starting from
-  game=true;
-  start=false;
-  ignoreNextTimer=false;
-  drawBoard();
-}
-
-void placeFood() {
-  int rx=0,ry=0;
-  rx = random(0,X-1);
-  ry = random(0,Y-1);
-  if (gameBoard[rx][ry]>0) {
-    while(gameBoard[rx][ry]>0) {
-      rx = random(0,X-1);
-      ry = random(0,Y-1);
-      if (gameBoard[rx][ry]==0) {
-        gameBoard[rx][ry]=-1;
-	break;
-      }
-    }
-  }
-  else {
-    gameBoard[rx][ry]=-1;
-  }
-}
-
-void loadSnake() {
-  gameBoard[sx][sy]=1;
-}
-
-void resetBoard() {
-  for(int x=0;x<X;x++) {
-    for(int y =0;y<Y;y++) {
-      gameBoard[x][y]=0;
-    }
-  }
-  loadSnake();
-}
-
-void gameOver() {
-  game = false;
-  start = false;
-  for(int light=0;light<255;light++) {
-    for(int i =0;i< theMatrix.numPixels();i++) {
-      theMatrix.setPixelColor(i,Color(light,0,0));
-    }
-    theMatrix.show();
-    delay(15);
-  }
-  theMatrix.show();
-}
-
-void moveSnake(int row, int col) {
-  sDr = row;
-  sDc = col;
-  int new_r=0,new_c=0;
-  new_r=hrow+row;
-  new_c=hcol+col;
-  if (new_r>=X||new_r<0||new_c>=Y||new_c<0) {
-    gameOver();
-  }
-  else if(gameBoard[new_r][new_c]>0) {
-    gameOver();
-  }
-  else if (gameBoard[new_r][new_c]==-1) {
-    gameBoard[new_r][new_c] = 1+gameBoard[hrow][hcol];
-    hrow=new_r;
-    hcol=new_c;
-    placeFood();
-    drawBoard();
-  }
-  else {
-    gameBoard[new_r][new_c] = 1+gameBoard[hrow][hcol];
-    hrow=new_r;
-    hcol=new_c;
-    removeTail();
-    drawBoard();
-  }
-}
-
-void removeTail() {
-  for (int x=0;x<X;x++) {
-    for (int y=0;y<Y;y++) {
-      if(gameBoard[x][y]>0) {
-        gameBoard[x][y]--;
-      }
-    }
-  }
-}
-
-void drawBoard() {
-  clear_dsp();
-  for (int x=0;x<X;x++) {
-    for (int y=0;y<Y;y++) {
-      if(gameBoard[x][y]==-1) {//food
-        theMatrix.setPixelColor(g2p(x+1,y+1),Color(0,255,0)); //green, food
-      }
-      else if(gameBoard[x][y]==0) { //empty
-        theMatrix.setPixelColor(g2p(x+1,y+1),Color(0,0,0)); //off
-      }
-      else {
-        theMatrix.setPixelColor(g2p(x+1,y+1),Color(0,0,255)); //blue, snake
-      }
-    }
-  }
-  theMatrix.show();
-}
-
-void findSnakeHead() {
-  hrow=0;//clearing out old location
-  hcol=0;//clearing out old location
-  for (int x=0;x<X;x++) {
-    for (int y=0;y<Y;y++) {
-      if (gameBoard[x][y]>gameBoard[hrow][hcol]) {
-        hrow=x;
-	hcol=y;
-      }
-    }
-  }
-}
-
-
-void clear_dsp() {
-  for(int i =0;i< theMatrix.numPixels();i++) {
-    theMatrix.setPixelColor(i,Color(0,0,0));
-  }
-  theMatrix.show();
-}
-
-uint16_t SetElement(uint16_t row, uint16_t col)
-{
-	//array[width * row + col] = value;
-	return Y * row+col;
-}
-
-
-
-/* END SNAKE SETUP */
-
-/* MQTT START */
-IPAddress iotEclipse(198, 41, 30, 241);
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  if(length>2) {
-    Serial.println("length > 2");
-    if((char)payload[0] == 'd' && (char)payload[1] == 'p') {
-      Serial.println("mqtt dp");
-      defaultPattern = payload[2] - '0';
-      Serial.println(defaultPattern);
-    }
-  }
-  for (int i=0;i<length;i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-}
-EthernetClient ethClient;
-PubSubClient client(ethClient);
-void MQTTConnect() {
-  Serial.println("MQTT starting connection");
-  while (!client.connected()) {
-    if(client.connect("DeskLights128")) {
-      client.subscribe("DeskLights128");
-      Serial.println("Subscribed");
-    }
-    else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      delay(1000);
-    }
-  }
-}
-/* MQTT END */
-
 // 'graph' style x,y where 0,0 is bottom left
 
 int grid[STRIPLEN] = {
@@ -348,57 +64,57 @@ int grid[STRIPLEN] = {
 //cylon colors
 
 uint32_t red[6] = { //red
-  Color(255,0,0),
-  Color(200,0,0),
-  Color(150,0,0),
-  Color(100,0,0),
-  Color(50,0,0),
-  Color(0,0,0),
+  theMatrix.Color(255,0,0),
+  theMatrix.Color(200,0,0),
+  theMatrix.Color(150,0,0),
+  theMatrix.Color(100,0,0),
+  theMatrix.Color(50,0,0),
+  theMatrix.Color(0,0,0),
 };
 
 uint32_t orange[6] = { //orange
-  Color(255,128,0),
-  Color(200,100,0),
-  Color(150,75,0),
-  Color(100,50,0),
-  Color(50,25,0),
-  Color(0,0,0),
+  theMatrix.Color(255,128,0),
+  theMatrix.Color(200,100,0),
+  theMatrix.Color(150,75,0),
+  theMatrix.Color(100,50,0),
+  theMatrix.Color(50,25,0),
+  theMatrix.Color(0,0,0),
 };
 
 uint32_t yellow[6] = { //yellow
-  Color(255,255,0),
-  Color(200,200,0),
-  Color(150,150,0),
-  Color(100,100,0),
-  Color(50,50,0),
-  Color(0,0,0),
+  theMatrix.Color(255,255,0),
+  theMatrix.Color(200,200,0),
+  theMatrix.Color(150,150,0),
+  theMatrix.Color(100,100,0),
+  theMatrix.Color(50,50,0),
+  theMatrix.Color(0,0,0),
 };
 
 uint32_t green[6] = { //green
-  Color(0,255,0),
-  Color(0,200,0),
-  Color(0,150,0),
-  Color(0,100,0),
-  Color(0,50,0),
-  Color(0,0,0),
+  theMatrix.Color(0,255,0),
+  theMatrix.Color(0,200,0),
+  theMatrix.Color(0,150,0),
+  theMatrix.Color(0,100,0),
+  theMatrix.Color(0,50,0),
+  theMatrix.Color(0,0,0),
 };
 
 uint32_t blue[6] = { //blue
-  Color(0,0,255),
-  Color(0,0,200),
-  Color(0,0,150),
-  Color(0,0,100),
-  Color(0,0,50),
-  Color(0,0,0),
+  theMatrix.Color(0,0,255),
+  theMatrix.Color(0,0,200),
+  theMatrix.Color(0,0,150),
+  theMatrix.Color(0,0,100),
+  theMatrix.Color(0,0,50),
+  theMatrix.Color(0,0,0),
 };
 
 uint32_t purple[6] = { //blue
-  Color(127,0,255),
-  Color(100,0,200),
-  Color(75,0,150),
-  Color(50,0,100),
-  Color(25,0,50),
-  Color(0,0,0),
+  theMatrix.Color(127,0,255),
+  theMatrix.Color(100,0,200),
+  theMatrix.Color(75,0,150),
+  theMatrix.Color(50,0,100),
+  theMatrix.Color(25,0,50),
+  theMatrix.Color(0,0,0),
 };
 
 //end cylon colors
@@ -453,71 +169,23 @@ P(noauth) = "User Denied\n";
 #define VALUELEN 32
 
 /*** Below here shouldn't need to change ***/
-// LED support functions
 
-void drawLine(int16_t x0, int16_t y0,
-			    int16_t x1, int16_t y1,
-			    uint32_t color) {
-  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
-  if (steep) {
-    swap(x0, y0);
-    swap(x1, y1);
-  }
-
-  if (x0 > x1) {
-    swap(x0, x1);
-    swap(y0, y1);
-  }
-
-  int16_t dx, dy;
-  dx = x1 - x0;
-  dy = abs(y1 - y0);
-
-  int16_t err = dx / 2;
-  int16_t ystep;
-
-  if (y0 < y1) {
-    ystep = 1;
-  } else {
-    ystep = -1;
-  }
-
-  for (; x0<=x1; x0++) {
-    if (steep) {
-      theMatrix.setPixelColor(g2p(y0, x0), color);
-    } else {
-      theMatrix.setPixelColor(g2p(x0, y0), color);
-    }
-    err -= dy;
-    if (err < 0) {
-      y0 += ystep;
-      err += dx;
+int antiDelay(unsigned long nowTime, int delayTime) {
+  unsigned long arduinoTime = millis();
+  Serial.print("antidelay, arduinoTime: ");Serial.print(arduinoTime);Serial.print(", nowTime: ");Serial.print(nowTime);Serial.print(", delayTime: ");Serial.println(delayTime);
+  while(arduinoTime - nowTime < delayTime) {
+    arduinoTime = millis();
+    if(webserver.available()) {
+      //check for new web requests
+      char buff[64];
+      int len = 64;
+      webserver.processConnection(buff, &len);
+      return 0;
     }
   }
+  return 1;
 }
 
-void drawFastVLine(int16_t x, int16_t y,
-				 int16_t h, uint32_t color) {
-  // Update in subclasses if desired!
-  drawLine(x, y, x, y+h-1, color);
-}
-
-void drawFastHLine(int16_t x, int16_t y,
-				 int16_t w, uint32_t color) {
-  // Update in subclasses if desired!
-  drawLine(x, y, x+w-1, y, color);
-}
-
-// create the "Color" value from rgb...This is right from Adafruit
-uint32_t Color(byte r, byte g, byte b) {
-  uint32_t c;
-  c = r;
-  c <<= 8;
-  c |= g;
-  c <<= 8;
-  c |= b;
-  return c;
-}
 
 // create a "Color" value from a hex string (no prefix)
 // for example: ffffff
@@ -529,15 +197,15 @@ uint32_t hexColor(char * in) {
 //The colours are a transition r - g -b - back to r
 uint32_t Wheel(byte WheelPos) {
   if (WheelPos < 85) {
-    return Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+    return theMatrix.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
   } 
   else if (WheelPos < 170) {
     WheelPos -= 85;
-    return Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    return theMatrix.Color(255 - WheelPos * 3, 0, WheelPos * 3);
   } 
   else {
     WheelPos -= 170;
-    return Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    return theMatrix.Color(0, WheelPos * 3, 255 - WheelPos * 3);
   }
 }
 
@@ -545,7 +213,7 @@ uint32_t Wheel(byte WheelPos) {
 void colorAll(uint32_t c) {
   Serial.println("Matrix");
   for (int i=0; i < theMatrix.numPixels(); i++) {
-    theMatrix.setPixelColor(i, c);
+    theMatrix.drawPixel(i, c);
   }
   defaultPattern = 0;
   theMatrix.show();
@@ -553,25 +221,25 @@ void colorAll(uint32_t c) {
 //colorAllDef is just colorAll without the defaultPattern set
 void colorAllDef(uint32_t c) {
   for (int i=0; i < theMatrix.numPixels(); i++) {
-    theMatrix.setPixelColor(i, c);
+    theMatrix.drawPixel(i, c);
   }
   theMatrix.show();
 }
 // set all pixels to a "Color" value, one at a time, with a delay
 void colorWipe(uint32_t c, uint8_t wait) {
   for (int i=0; i < theMatrix.numPixels(); i++) {
-    theMatrix.setPixelColor(i, c);
+    theMatrix.drawPixel(i, c);
     defaultPattern = 0;
     theMatrix.show();
-    delay(wait);
+    if(antiDelay(millis(), wait) == 0) break;
   }
 }
 // show the grid to verify
 void gridTest(int wait) {
   int x;
   int y;
-  uint32_t on = Color(255,255,255);
-  uint32_t off = Color(0,0,0);
+  uint32_t on = theMatrix.Color(255,255,255);
+  uint32_t off = theMatrix.Color(0,0,0);
 
   if (!wait) {
     wait = 250;
@@ -580,10 +248,10 @@ void gridTest(int wait) {
   for ( x = 0; x <= max_x; x++) {
     for ( y = 0; y <= max_y; y++) {
       defaultPattern = 0;
-      theMatrix.setPixelColor(g2p(x,y), on);
+      theMatrix.drawPixel(g2p(x,y), on);
       theMatrix.show();
-      delay(wait);
-      theMatrix.setPixelColor(g2p(x,y), off);
+      antiDelay(millis(), wait);
+      theMatrix.drawPixel(g2p(x,y), off);
       theMatrix.show();
     }
   }
@@ -591,21 +259,22 @@ void gridTest(int wait) {
 // random pixel, random color
 // short pattern, very responsive
 void p_random (int wait) {
-  theMatrix.setPixelColor(
+  theMatrix.drawPixel(
   random(0, theMatrix.numPixels()),
-  Color(random(0,255), random(0,255), random(0,255))
+  theMatrix.Color(random(0,255), random(0,255), random(0,255))
     );
   theMatrix.show();
-  delay(wait);
+  antiDelay(millis(), wait);
 }
 
 // If you were at maker faire, you know this pattern
 // it takes about a second to run, so new requests will wait
 void p_rainbow() {
   int i, j;
+  Serial.println("rainbow");
   for (j=0; j < 256; j++) {
     for (i=0; i < theMatrix.numPixels(); i++) {
-      theMatrix.setPixelColor(i, Wheel( ((i * 256 / theMatrix.numPixels()) + j) % 256) );
+      theMatrix.drawPixel(i, Wheel( ((i * 256 / theMatrix.numPixels()) + j) & 255) );
     }
     theMatrix.show();
   }
@@ -621,12 +290,12 @@ void p_cylon(uint32_t c[6]) {
     while ((mod < 6) && (x - mod >= 0)) {
       int y = 0;
       while (y <= max_y) {
-        theMatrix.setPixelColor(g2p(x-mod,y++), c[mod]);
+        theMatrix.drawPixel(g2p(x-mod,y++), c[mod]);
       }
       mod++;
     }
     theMatrix.show();
-    delay(wait);
+    if(antiDelay(millis(), wait) == 0) return;
   }
 
   for (x=max_x; x >= 0; x--) {
@@ -634,18 +303,18 @@ void p_cylon(uint32_t c[6]) {
     while ((mod < 6) && (x + mod <= max_x)) {
       int y = 0;
       while (y <= max_y) {
-        theMatrix.setPixelColor(g2p(x+mod,y++), c[mod]);
+        theMatrix.drawPixel(g2p(x+mod,y++), c[mod]);
       }
       mod++;
     }
     theMatrix.show();
-    delay(wait);
+    if(antiDelay(millis(), wait) == 0) return;
   }
 
 }
 //visualizer, takes string of 16 numbers which are Y heights
 void vu(String input) {
-  uint32_t color = Color(255,0,0);
+  uint32_t color = theMatrix.Color(255,0,0);
   for(int i = 0; i<input.length(); i++) {
     int y = input.charAt(i) - '0';
     if(y > max_y) {
@@ -653,20 +322,20 @@ void vu(String input) {
     }
     if(y < 1) {
       for(y = 1; y<max_y+1; y++) {
-        theMatrix.setPixelColor(g2p(i+1,y), Color(0,0,0));
+        theMatrix.drawPixel(g2p(i+1,y), theMatrix.Color(0,0,0));
       }
     }
     else {
       int y_orig = y;
       for(y; y>0; y--) {
-        if(y>6) color = Color(255,0,0);
-        else if(y>3) color = Color(255,128,0);
-        else color = Color(255,255,0);
-        theMatrix.setPixelColor(g2p(i+1,y), color);
+        if(y>6) color = theMatrix.Color(255,0,0);
+        else if(y>3) color = theMatrix.Color(255,128,0);
+        else color = theMatrix.Color(255,255,0);
+        theMatrix.drawPixel(g2p(i+1,y), color);
       }
       y = y_orig+1;
       for(y; y<max_y+1; y++) {
-        theMatrix.setPixelColor(g2p(i+1,y), Color(0,0,0));
+        theMatrix.drawPixel(g2p(i+1,y), theMatrix.Color(0,0,0));
       }
     }
   }
@@ -793,10 +462,10 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
   }
 
   if (use_hex == 0) {
-    c = Color(r,g,b);
+    c = theMatrix.Color(r,g,b);
   }
 
-  theMatrix.setPixelColor(id, c);
+  theMatrix.drawPixel(id, c);
 
   if (s) {
     theMatrix.show();
@@ -811,13 +480,13 @@ void fade(uint32_t c1, uint32_t c2, int wait) {
   if (c1 < c2) {
     while (c1 < c2) {
       colorAll(c1++);
-      delay(wait);
+      antiDelay(millis(), wait);
     }
   } 
   else {
     while (c1 > c2) {
       colorAll(c1--);
-      delay(wait);
+      antiDelay(millis(), wait);
     }
   }
 }
@@ -845,9 +514,10 @@ uint16_t g2p(uint16_t x, uint16_t y) { //this is for a row-major set, bottom lef
 
 // flash color "c" for "wait" ms
 void alert(uint32_t c, int wait) {
+  Serial.print("alert wait: ");Serial.println(wait);
   colorAll(c);
-  delay(wait);
-  colorAll(Color(0,0,0));
+  antiDelay(millis(), wait);
+  colorAll(theMatrix.Color(0,0,0));
 }
 
 // flash color "c" on x/y/c/u as a rectangle
@@ -855,7 +525,7 @@ void alertArea(uint32_t c, int x, int y, int xE, int yE) {
   int w = xE-x+1;
   int h = yE-y+1;
   for (int16_t i=x; i<x+w; i++) {
-    drawFastVLine(i, y, h, c);
+    theMatrix.drawFastVLine(i, y, h, c);
   }
   theMatrix.show();
 }
@@ -864,11 +534,11 @@ void alertArea(uint32_t c, int x, int y, int xE, int yE) {
 
 // wipe the major colors through all pixels
 void lightTest(int wait) {
-  colorWipe(Color(255, 0, 0), wait);
-  colorWipe(Color(0, 255, 0), wait);
-  colorWipe(Color(0, 0, 255), wait);
-  colorWipe(Color(255, 255, 255), wait);
-  colorWipe(Color(0, 0, 0), wait);
+  colorWipe(theMatrix.Color(255, 0, 0), wait);
+  colorWipe(theMatrix.Color(0, 255, 0), wait);
+  colorWipe(theMatrix.Color(0, 0, 255), wait);
+  colorWipe(theMatrix.Color(255, 255, 255), wait);
+  colorWipe(theMatrix.Color(0, 0, 0), wait);
 }
 
 void cmd_index(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -880,7 +550,7 @@ void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tai
 }
 
 void cmd_off(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  colorAll(Color(0,0,0));
+  colorAll(theMatrix.Color(0,0,0));
   theMatrix.setCursor(1, 1);
   printOk(server);
 }
@@ -918,7 +588,7 @@ void cmd_color(WebServer &server, WebServer::ConnectionType type, char *url_tail
   }
 
   if (!use_hex) {
-    c = Color(r,g,b);
+    c = theMatrix.Color(r,g,b);
   }
   colorAll(c);
   printOk(server);
@@ -961,7 +631,7 @@ void cmd_wipe(WebServer &server, WebServer::ConnectionType type, char *url_tail,
   }
 
   if (!use_hex) {
-    c = Color(r,g,b);
+    c = theMatrix.Color(r,g,b);
   }
 
   printOk(server);
@@ -977,29 +647,12 @@ void cmd_default(WebServer &server, WebServer::ConnectionType type, char *url_ta
     if ((rc != URLPARAM_EOS)) {
       if (name[0] == 'i') {
         defaultPattern = atoi(value);
-        colorAllDef(Color(0,0,0));
+        colorAllDef(theMatrix.Color(0,0,0));
       }
     }
   }
 
   printOk(server);
-}
-
-void cmd_snakemove(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
-  URLPARAM_RESULT rc;
-  char name[NAMELEN];
-  char value[VALUELEN];
-  while (strlen(url_tail)) {
-    rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
-    if ((rc != URLPARAM_EOS)) {
-      if (name[0] == 'i') {
-        snakeButton = atoi(value);
-        Serial.println(snakeButton);
-      }
-    }
-  }
-
-  printNothing(server);
 }
 
 void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete) {
@@ -1038,7 +691,7 @@ void cmd_alert(WebServer &server, WebServer::ConnectionType type, char *url_tail
   }
 
   if (use_hex == 0) {
-    c = Color(r,g,b);
+    c = theMatrix.Color(r,g,b);
   }
 
   if (!d) {
@@ -1094,7 +747,7 @@ void cmd_alertArea(WebServer &server, WebServer::ConnectionType type, char *url_
   }
 
   if (use_hex == 0) {
-    aac = Color(r,g,b);
+    aac = theMatrix.Color(r,g,b);
   }
   
   defaultPattern = 10;
@@ -1193,17 +846,9 @@ void setup() {
   webserver.addCommand("write", &cmd_writechar);
   webserver.addCommand("test", &cmd_test);
   webserver.addCommand("vu", &cmd_vu);
-  webserver.addCommand("snake", &cmd_snakemove);
   webserver.addCommand("alertArea", &cmd_alertArea);
   webserver.begin();
   Udp.begin(localPort);
-  
-  /* SNAKE SETUP */
-  hrow=sx;//set the row of the snake head
-  hcol=sy;//set the col of the snake head
-  randomSeed(analogRead(28));//used to help make a better random number
-  resetGame();//clear and set the game
-  /* END SNAKE SETUP */
   
   theMatrix.begin();
   theMatrix.setCursor(1,1);
@@ -1212,35 +857,33 @@ void setup() {
   //theMatrix.setRemapFunction(g2p); //this is causing issues with matrix.write() ? tested it at tinker night and was scrolling fine commented out.
   
   // light blip of light to signal we are ready to listen
-  colorAll(Color(0,0,11));
+  colorAll(theMatrix.Color(0,0,11));
   delay(500);
-  colorAll(Color(0,0,0));
-  client.setServer(iotEclipse, 1883);
-  client.setCallback(callback);
-  MQTTConnect();
+  colorAll(theMatrix.Color(0,0,0));
 }
 
 void loop()
 {
-  /*if(Serial1.available() > 0) {
-    defaultPattern = 9;
-  }*/
   unsigned long t = millis(); // Current elapsed time, milliseconds.
+  if(t - lastCheck > 1000) {
+    lastCheck = t;
+    //Serial.println("Alive!");
+  }
   EthernetBonjour.run();
   // listen for connections
-  char buff[64];
-  int len = 64;
-  webserver.processConnection(buff, &len);
+  if(webserver.available()) {
+    Serial.println("tcp data");
+    char buff[64];
+    int len = 64;
+    webserver.processConnection(buff, &len);
+  }
   int packetSize = Udp.parsePacket();
   if(packetSize) {
+    Serial.println("udp data");
     Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
     vu(packetBuffer);
     theMatrix.show();
   }
-  if (!client.connected()) {
-    MQTTConnect();
-  }
-  client.loop();
   
   switch(defaultPattern) {
   case 1:
@@ -1253,7 +896,7 @@ void loop()
     p_cylon(blue);
     break;
   case 4:
-    colorAll(Color(0,0,0));
+    colorAll(theMatrix.Color(0,0,0));
     theMatrix.setCursor(1, 1);
     break;
   case 5:
@@ -1289,32 +932,16 @@ void loop()
     p_cylon(blue);
     p_cylon(purple);
     break;
-  case 9:
-    /*if(Serial1.available() > 0) {
-       snakeButton = Serial1.read();
-       Serial.println(snakeButton);
-    }*/
-    currentMillis = millis();
-    if(currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;
-      if (game&&start&&ignoreNextTimer==false) {
-        drawBoard();
-	updateGame();
-      }
-      ignoreNextTimer=false;//resets the ignore bool
-    }
-    checkKeyboard();
-    break;
     case 10:
       for(int p=0;p<200;p++) {
         alertArea(aac, aax, aay, aaxE, aayE);
         aac--;
-        delay(5);
+        antiDelay(millis(), 5);
       }
       for(int p=0;p<200;p++) {
         alertArea(aac, aax, aay, aaxE, aayE);
         aac++;
-        delay(5);
+        antiDelay(millis(), 5);
       }
     break;
   }
