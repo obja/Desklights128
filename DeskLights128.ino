@@ -114,7 +114,7 @@ void printOk(WebServer &server) {
   server.println(F("<option value='3'>K.I.T.T.</option>")); //yellow
   server.println(F("<option value='8'>K.I.T.T. Multi</option>")); //yellow
   server.println(F("<input type='submit' value='go'> </select> </form>")); //end select
-  server.println(F("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <select id='colorwrite'> <option value='FF0000'>Red</option><option value='FF6600'>Orange</option> <option value='FFFF00'>Yellow</option><option value='336600'>Green</option> <option value='003333'>Blue</option><option value='660033'>Purple</option> </select> <input type='submit' value='go'> </form>")); //this writes a single character to the board
+  server.println(F("<form onSubmit='return process();'> Write Character: <input type='text' name='url' id='url'> <select id='colorwrite'> <option value='FFFFFF'>White</option><option value='FF0000'>Red</option><option value='FF6600'>Orange</option> <option value='FFFF00'>Yellow</option><option value='336600'>Green</option> <option value='003333'>Blue</option><option value='660033'>Purple</option> </select> <input type='submit' value='go'> </form>")); //this writes a single character to the board
   server.print(F("<a href='default?id=4'>All Off</a><p></p>"));
   server.println(F("</body></html>")); //end html
 }
@@ -471,7 +471,6 @@ void p_random (int wait) {
 // it takes about a second to run, so new requests will wait
 void p_rainbow() {
   int i, j;
-  Serial.println("rainbow");
   for (j = 0; j < 256; j++) {
     for (i = 0; i < theMatrix.numPixels(); i++) {
       theMatrix.setPixelColor(i, Wheel( ((i * 256 / theMatrix.numPixels()) + j) & 255) );
@@ -684,14 +683,12 @@ void loop()
   EthernetBonjour.run();
   // listen for connections
   if (webserver.available()) {
-    Serial.println("tcp data");
     char buff[64];
     int len = 64;
     webserver.processConnection(buff, &len);
   }
   int packetSize = Udp.parsePacket();
   if (packetSize) {
-    Serial.println("udp data");
     Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
     vu(packetBuffer);
     theMatrix.show();
