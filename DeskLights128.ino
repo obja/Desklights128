@@ -630,19 +630,9 @@ void setup() {
 
   Serial.print(F("DNS is: "));
   Serial.println(Ethernet.dnsServerIP());
-
-  String tableName = "DeskLights." + String(ip[3]);
-  String tableNameDL = "DeskLights." + String(ip[3]) + "._desklights";
-  String tableNameHTTP = "DeskLights." + String(ip[3]) + "._http";
-  char tableNameAr[30];
-  char tableNameDLAr[30];
-  char tableNameHTTPAr[30];
-  tableName.toCharArray(tableNameAr, 30);
-  EthernetBonjour.begin(tableNameDLAr);
-  tableNameDL.toCharArray(tableNameDLAr, 30);
-  tableNameHTTP.toCharArray(tableNameHTTPAr, 30);
-  EthernetBonjour.addServiceRecord(tableNameDLAr, 80, MDNSServiceTCP);
-  EthernetBonjour.addServiceRecord(tableNameHTTPAr, 80, MDNSServiceTCP);
+  EthernetBonjour.begin("AlecTable");
+  EthernetBonjour.addServiceRecord("DeskLights._http", 80, MDNSServiceTCP);
+  EthernetBonjour.addServiceRecord("DeskLights._DeskLights", 80, MDNSServiceTCP);
   webserver.setFailureCommand(&my_failCmd);
   webserver.setDefaultCommand(&cmd_index);
   webserver.addCommand("off", &cmd_off);
@@ -676,7 +666,7 @@ void loop()
   unsigned long t = millis(); // Current elapsed time, milliseconds.
   if (t - lastCheck > 1000) {
     lastCheck = t;
-    //Serial.println("Alive!");
+    Serial.println("Alive!");
   }
   EthernetBonjour.run();
   // listen for connections
