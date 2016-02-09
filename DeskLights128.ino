@@ -356,7 +356,7 @@ void cmd_pixel(WebServer &server, WebServer::ConnectionType type, char *url_tail
 // --------------------------------------- START FUNCTIONS ----------------------------------- //
 int antiDelay(unsigned long nowTime, int delayTime) {
   unsigned long arduinoTime = millis();
-  Serial.print("antidelay, arduinoTime: "); Serial.print(arduinoTime); Serial.print(", nowTime: "); Serial.print(nowTime); Serial.print(", delayTime: "); Serial.println(delayTime);
+  Serial.print(F("antidelay, arduinoTime: ")); Serial.print(arduinoTime); Serial.print(F(", nowTime: ")); Serial.print(nowTime); Serial.print(F(", delayTime: ")); Serial.println(delayTime);
   while (arduinoTime - nowTime < delayTime) {
     arduinoTime = millis();
     if (webserver.available()) {
@@ -411,7 +411,6 @@ uint32_t Wheel(byte WheelPos) {
 
 // set all pixels to a "Color" value
 void colorAll(uint32_t c) {
-  Serial.println("Matrix");
   for (int i = 0; i < theMatrix.numPixels(); i++) {
     theMatrix.setPixelColor(i, c);
   }
@@ -574,7 +573,6 @@ uint16_t g2p(uint16_t x, uint16_t y) {
 
 // flash color "c" for "wait" ms
 void alert(uint32_t c, int wait) {
-  Serial.print("alert wait: "); Serial.println(wait);
   colorAll(c);
   antiDelay(millis(), wait);
   colorAll(Color(0, 0, 0));
@@ -621,16 +619,16 @@ void setup() {
   {
     Serial.println(F("Configured Ethernet using DHCP"));
   }
-  Serial.print(("device IP is: "));
+  Serial.print(F("device IP is: "));
   Serial.println(Ethernet.localIP());
 
-  Serial.print(("gateway IP is: "));
+  Serial.print(F("gateway IP is: "));
   Serial.println(Ethernet.gatewayIP());
 
-  Serial.print(("subnet mask is: "));
+  Serial.print(F("subnet mask is: "));
   Serial.println(Ethernet.subnetMask());
 
-  Serial.print(("DNS is: "));
+  Serial.print(F("DNS is: "));
   Serial.println(Ethernet.dnsServerIP());
 
   String tableName = "DeskLights." + String(ip[3]);
