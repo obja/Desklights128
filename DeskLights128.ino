@@ -8,10 +8,10 @@
 #include "EthernetUdp.h"
 #include "EthernetBonjour.h"
 #include "WebServer.h"
+#include "NeoMatrix_WS2801.h"
+#include "Adafruit_WS2801.h"
 #include "Adafruit_GFX.h"
 #include "glcdfont.c"
-#include <Adafruit_2801Matrix.h>
-#include <Adafruit_WS2801.h>
 
 unsigned long lastCheck = 0;
 
@@ -36,7 +36,7 @@ uint16_t max_y = 8;
 
 #define STRIPLEN 128
 int defaultPattern = 6;
-Adafruit_2801Matrix theMatrix = Adafruit_2801Matrix(max_x, max_y, dataPin, clockPin,
+NeoMatrix_WS2801 theMatrix = NeoMatrix_WS2801(max_x, max_y, dataPin, clockPin,
   NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT +
   NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
   WS2801_RGB);
