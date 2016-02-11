@@ -52,18 +52,6 @@ String writeCharStr = "";
 uint32_t aac;
 int aayE, aaxE, aay, aax;
 
-//ada gfx vars
-int16_t cursor_x_orig = 1;
-int16_t cursor_y_orig = 1;
-int16_t cursor_x = cursor_x_orig;
-int16_t cursor_y = cursor_y_orig;
-uint8_t textsize = 1;
-uint32_t textcolor = Color(255,255,255);
-uint32_t textbgcolor = Color(0,0,0);
-boolean wrap = false;
-int16_t _width = max_x;
-int16_t _height = max_y;
-
 //cylon colors
 
 uint32_t red[6] = {  Color(255, 0, 0),  Color(200, 0, 0),  Color(150, 0, 0),  Color(100, 0, 0),  Color(50, 0, 0),  Color(0, 0, 0) };
