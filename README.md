@@ -1,36 +1,28 @@
 # _Desklights128_
 =============
 
-## Desklights128, a fork of DeskLights2 ( https://github.com/mnlagrasta/DeskLights2 )
+## ESP8266 Branch Information
 
-1. New function added to draw characters/strings on the table (needs parameter L before the string in C)
-`http://server/write?l=1&c=H`
-will draw an H
-`http://server/write?l=5&c=hello`
-will draw hello
-2. Grid2Pixel function fixed for grid-style tables
-3. UDP server added for audio VU, with the command
-`http://server/vu?v=################`
-where each # corresponds to a column (our table uses 16 columns) and the value of the # corresponds to a row height
-`http://server/vu?v=1234567887654321`
-would set
+### Installing ESP8266 with Boards Manager (via https://github.com/esp8266/Arduino )
 
-> - 1,1 to on
-> - 2,1 to on
-> - 2,2 to on
-> - the entire column 8 & 9 etc
+Starting with 1.6.4, Arduino allows installation of third-party platform packages using Boards Manager. We have packages available for Windows, Mac OS, and Linux (32 and 64 bit).
 
-4. The web page response has had commands added and correct HTML headers to work with Safari
+- Install the current upstream Arduino IDE at the 1.8 level or later. The current version is at the [Arduino website](http://www.arduino.cc/en/main/software).
+- Start Arduino and open Preferences window.
+- Enter ```http://arduino.esp8266.com/stable/package_esp8266com_index.json``` into *Additional Board Manager URLs* field. You can add multiple URLs, separating them with commas.
+- Open Boards Manager from Tools > Board menu and install *esp8266* platform (and don't forget to select your ESP8266 board from Tools > Board menu after installation).
 
-## Android Application Source (Glass, Phone and Wear)
-https://github.com/AlecH92/DeskLights128.android
+### Teensyduino Installation
+- Install Teensyduino via PJRC: https://www.pjrc.com/teensy/td_download.html
 
-A new application was created to use as a notification tool straight from Android:
-https://github.com/AlecH92/DeskLights128.notifier
 
-## Pebble Application Source
-https://github.com/AlecH92/DeskLights128.pebble
+## Getting Started
 
-## Visualizer
-This works using the program Spectrum Lab and its feature of exporting FFT to a built in web server using JSON data.
-Source code: https://github.com/AlecH92/DeskLights128.visualizer
+- Set up Arduino for the Teensy (Tools > Board > Teensy 3.?)
+- upload esp8266uploader.ino on to the Teensy (This is a copy of Teensy's example "USB_Serial > USBtoSerial" as of Teensyduino 1.37)
+
+- Set up Arduino for the esp8266 (Tools > Board > Generic ESP8266 Module, Tools > Port > Teensy)
+- upload esp8266.ino on to the esp8266 (This takes care of our WiFi connection and web requests)
+
+- Set up Arduino for the Teensy again
+- upload DeskLights128.ino (This receives serial data from the esp8266 and controls the LEDs)
