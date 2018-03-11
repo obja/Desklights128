@@ -1,26 +1,39 @@
 #define CPU_RESTART_ADDR (uint32_t *)0xE000ED0C
 #define CPU_RESTART_VAL 0x5FA0004
 #define CPU_RESTART (*CPU_RESTART_ADDR = CPU_RESTART_VAL);
+#define NEOPIXEL //uncomment for NeoPixel usage, comment for WS2801
 
-#define PIN 6
-#include <Adafruit_GFX.h>
-#include <Adafruit_NeoPixel.h>
-#include <Adafruit_NeoMatrix.h>
+//set grid size here
+uint16_t max_x = 16;
+uint16_t max_y = 8;
+
+#include "Adafruit_GFX.h"
+#if defined(NEOPIXEL)
+//NeoPixel Setup
+  #define PIN 6 //NeoPixel signal wire
+  #include "Adafruit_NeoPixel.h"
+  #include "Adafruit_NeoMatrix.h"
+  Adafruit_NeoMatrix theMatrix = Adafruit_NeoMatrix(max_x, max_y, PIN,
+    NEO_MATRIX_BOTTOM     + NEO_MATRIX_LEFT +
+    NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
+    NEO_GRB            + NEO_KHZ800);
+#else
+//WS2801 Setup
+  #include "Adafruit_WS2801.h"
+  #include "NeoMatrix_WS2801.h"
+  uint8_t dataPin = 2; // Yellow wire on Adafruit Pixels
+  uint8_t clockPin = 3; // Green wire on Adafruit Pixels
+  NeoMatrix_WS2801 theMatrix = NeoMatrix_WS2801(max_x, max_y, dataPin, clockPin,
+    NEO_MATRIX_BOTTOM + NEO_MATRIX_LEFT +
+    NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
+    WS2801_RGB);
+#endif
 
 //default pattern on startup, 0 = off, 6 = current IP address
 int defaultPattern = 0;
 
 String inputString = "";
 boolean stringComplete = false;
-
-//set grid size here
-uint16_t max_x = 30;
-uint16_t max_y = 8;
-
-Adafruit_NeoMatrix theMatrix = Adafruit_NeoMatrix(30, 8, PIN,
-  NEO_MATRIX_BOTTOM     + NEO_MATRIX_LEFT +
-  NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG,
-  NEO_GRB            + NEO_KHZ800);
 
 //Matrix Scrolling
 unsigned long prevFrameTime = 0L;             // For animation timing
@@ -329,8 +342,8 @@ void fetchData(int *inData) {
         y = value.toInt();
         break;
       case 'h':
-        char test[6];
-        value.toCharArray(test, value.length());
+        char test[7]; //6 + NULL terminator
+        value.toCharArray(test, value.length()+1); //length + 1 fixes color error?
         c = hexColor(test);
         use_hex = 1;
         break;
