@@ -33,8 +33,8 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
-const char *ssid = "yourwifinetwork"
-const char *password = "yourwifipassword"
+const char *ssid = "yourwifinetwork";
+const char *password = "yourwifipassword";
 const char *tableName = "yourbonjourtablename";
 
 
